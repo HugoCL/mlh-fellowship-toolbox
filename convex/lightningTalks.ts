@@ -1,4 +1,8 @@
 import { v } from "convex/values"
+import {
+  getProgramWeeks,
+  isSameCalendarDay,
+} from "./lib/programWeeks"
 import { getFellowForUser, requireFellowForUser } from "./lib/auth"
 import {
   cohortMutation,
@@ -73,6 +77,120 @@ export const createSlot = podManagementMutation({
       maxEnrollments: args.maxEnrollments ?? 1,
       createdAt: Date.now(),
     })
+  },
+})
+
+export const generateAllSlots = podManagementMutation({
+  args: { cohortId: v.id("cohorts") },
+  returns: v.object({
+    created: v.number(),
+    skipped: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const cohort = await ctx.db.get("cohorts", args.cohortId)
+    if (!cohort) {
+      throw new Error("Cohort not found")
+    }
+
+    const programWeeks = getProgramWeeks(cohort.startDate, cohort.endDate)
+    const existing = await ctx.db
+      .query("lightningTalkSlots")
+      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
+      .collect()
+
+    let created = 0
+    let skipped = 0
+    const now = Date.now()
+
+    for (const week of programWeeks) {
+      const alreadyExists = existing.some((slot) =>
+        isSameCalendarDay(slot.slotDate, week.weekStart),
+      )
+      if (alreadyExists) {
+        skipped += 1
+        continue
+      }
+
+      const slotId = await ctx.db.insert("lightningTalkSlots", {
+        cohortId: args.cohortId,
+        slotDate: week.weekStart,
+        maxEnrollments: 1,
+        createdAt: now,
+      })
+      const inserted = await ctx.db.get("lightningTalkSlots", slotId)
+      if (inserted) {
+        existing.push(inserted)
+      }
+      created += 1
+    }
+
+    return { created, skipped }
+  },
+})
+
+export const updateSlot = podManagementMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    slotId: v.id("lightningTalkSlots"),
+    slotDate: v.optional(v.number()),
+    maxEnrollments: v.optional(v.number()),
+  },
+  returns: slotValidator,
+  handler: async (ctx, args) => {
+    const slot = await ctx.db.get("lightningTalkSlots", args.slotId)
+    if (!slot || slot.cohortId !== args.cohortId) {
+      throw new Error("Slot not found")
+    }
+
+    const updates: {
+      slotDate?: number
+      maxEnrollments?: number
+    } = {}
+
+    if (args.slotDate !== undefined) {
+      updates.slotDate = args.slotDate
+    }
+    if (args.maxEnrollments !== undefined) {
+      updates.maxEnrollments = args.maxEnrollments
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await ctx.db.patch("lightningTalkSlots", args.slotId, updates)
+    }
+
+    const updated = await ctx.db.get("lightningTalkSlots", args.slotId)
+    if (!updated) {
+      throw new Error("Slot not found")
+    }
+    return updated
+  },
+})
+
+export const deleteSlot = podManagementMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    slotId: v.id("lightningTalkSlots"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const slot = await ctx.db.get("lightningTalkSlots", args.slotId)
+    if (!slot || slot.cohortId !== args.cohortId) {
+      throw new Error("Slot not found")
+    }
+
+    const talks = await ctx.db
+      .query("lightningTalks")
+      .withIndex("by_slot", (q) => q.eq("slotId", args.slotId))
+      .collect()
+
+    if (talks.length > 0) {
+      throw new Error(
+        "Remove or reassign enrolled talks before deleting this slot.",
+      )
+    }
+
+    await ctx.db.delete("lightningTalkSlots", args.slotId)
+    return null
   },
 })
 

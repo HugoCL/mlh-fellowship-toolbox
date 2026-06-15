@@ -27,6 +27,7 @@ import type * as lib_groups from "../lib/groups.js";
 import type * as lib_impersonation from "../lib/impersonation.js";
 import type * as lib_inviteAcceptance from "../lib/inviteAcceptance.js";
 import type * as lib_programCode from "../lib/programCode.js";
+import type * as lib_programWeeks from "../lib/programWeeks.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as lightningTalks from "../lightningTalks.js";
 import type * as mentors from "../mentors.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   "lib/impersonation": typeof lib_impersonation;
   "lib/inviteAcceptance": typeof lib_inviteAcceptance;
   "lib/programCode": typeof lib_programCode;
+  "lib/programWeeks": typeof lib_programWeeks;
   "lib/validators": typeof lib_validators;
   lightningTalks: typeof lightningTalks;
   mentors: typeof mentors;

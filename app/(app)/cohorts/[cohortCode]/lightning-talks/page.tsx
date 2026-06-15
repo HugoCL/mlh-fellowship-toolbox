@@ -6,6 +6,10 @@ import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
+import {
+  ManageableWeekSlotList,
+  runGenerateAllWeeks,
+} from "@/components/app/manageable-week-slot-list"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Button } from "@/components/ui/button"
@@ -46,6 +50,9 @@ export default function LightningTalksPage() {
     cohortId ? { cohortId } : "skip",
   )
   const createSlot = useMutation(api.lightningTalks.createSlot)
+  const generateAllSlots = useMutation(api.lightningTalks.generateAllSlots)
+  const updateSlot = useMutation(api.lightningTalks.updateSlot)
+  const deleteSlot = useMutation(api.lightningTalks.deleteSlot)
   const enroll = useMutation(api.lightningTalks.enroll)
   const assignTalk = useMutation(api.lightningTalks.assignTalk)
   const updateTalkCompletion = useMutation(
@@ -188,7 +195,45 @@ export default function LightningTalksPage() {
               </Field>
               <Button type="submit">Add Slot</Button>
             </form>
+            <Button
+              variant="outline"
+              onClick={() =>
+                void runGenerateAllWeeks(
+                  () => generateAllSlots({ cohortId }),
+                  "talk slot",
+                )
+              }
+            >
+              Generate All Weeks
+            </Button>
           </PageToolbar>
+        ) : null}
+
+        {isLeader ? (
+          <ManageableWeekSlotList
+            title="Lightning talk weeks"
+            description="One slot per program week. Remove enrolled talks before deleting a slot."
+            slots={(data?.slots ?? []).map((slot) => ({
+              id: slot._id,
+              label: formatDate(slot.slotDate),
+              date: slot.slotDate,
+            }))}
+            showLabelField={false}
+            onUpdate={async (slotId, values) => {
+              await updateSlot({
+                cohortId,
+                slotId: slotId as Id<"lightningTalkSlots">,
+                slotDate: values.date,
+              })
+            }}
+            onDelete={async (slotId) => {
+              await deleteSlot({
+                cohortId,
+                slotId: slotId as Id<"lightningTalkSlots">,
+              })
+            }}
+            deleteDescription="Remove or reassign enrolled talks before deleting this slot."
+          />
         ) : null}
 
         {!isLeader && cohort?.fellow && !myTalk ? (

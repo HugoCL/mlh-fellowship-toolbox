@@ -1,15 +1,34 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import { Info } from "lucide-react"
+import { Info, PencilIcon, Trash2Icon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
+import { runGenerateAllWeeks } from "@/components/app/manageable-week-slot-list"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -31,7 +50,7 @@ import {
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
-import { formatDate } from "@/lib/dates"
+import { formatDate, toDateInputValue } from "@/lib/dates"
 import { useCohortRoute } from "@/lib/use-cohort-route"
 
 export default function DemoDaysPage() {
@@ -46,10 +65,17 @@ export default function DemoDaysPage() {
     cohortId ? { cohortId } : "skip",
   )
   const assignDemoDay = useMutation(api.demoDays.assignDemoDay)
+  const generateAllDemoDays = useMutation(api.demoDays.generateAllDemoDays)
+  const removeDemoDay = useMutation(api.demoDays.removeDemoDay)
   const updateDemoCompletion = useMutation(api.demoDays.updateDemoCompletion)
 
   const [selectedFellow, setSelectedFellow] = useState<string>("")
   const [demoDate, setDemoDate] = useState("")
+  const [editingDemoDayId, setEditingDemoDayId] = useState<Id<"demoDays"> | null>(
+    null,
+  )
+  const [editDemoDate, setEditDemoDate] = useState("")
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
 
   const isLeader = cohort?.canManagePod ?? false
   const isUmbrellaAdminBlocked =
@@ -186,6 +212,17 @@ export default function DemoDaysPage() {
               </Field>
               <Button type="submit">Assign Date</Button>
             </form>
+            <Button
+              variant="outline"
+              onClick={() =>
+                void runGenerateAllWeeks(
+                  () => generateAllDemoDays({ cohortId }),
+                  "demo day",
+                )
+              }
+            >
+              Generate All Weeks
+            </Button>
           </PageToolbar>
         ) : null}
 
@@ -224,6 +261,9 @@ export default function DemoDaysPage() {
                   <TableHead>Fellow</TableHead>
                   <TableHead>Date for Demo</TableHead>
                   <TableHead>Completed Demo</TableHead>
+                  {isLeader ? (
+                    <TableHead className="w-24 text-right">Actions</TableHead>
+                  ) : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -262,6 +302,72 @@ export default function DemoDaysPage() {
                           }}
                         />
                       </TableCell>
+                      {isLeader ? (
+                        <TableCell className="text-right">
+                          {demo ? (
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Edit demo date for ${fellow.name}`}
+                                onClick={() => {
+                                  setEditingDemoDayId(demo._id)
+                                  setEditDemoDate(toDateInputValue(demo.demoDate))
+                                }}
+                              >
+                                <PencilIcon className="size-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger
+                                  render={
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      aria-label={`Remove demo date for ${fellow.name}`}
+                                    />
+                                  }
+                                >
+                                  <Trash2Icon className="size-4 text-destructive" />
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Remove demo day?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This clears the assigned date for{" "}
+                                      {fellow.name}. You can assign a new date
+                                      later.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() =>
+                                        void removeDemoDay({
+                                          cohortId,
+                                          demoDayId: demo._id,
+                                        }).then(
+                                          () =>
+                                            toast.success("Demo day removed."),
+                                          (error: unknown) =>
+                                            toast.error(
+                                              error instanceof Error
+                                                ? error.message
+                                                : "Remove failed.",
+                                            ),
+                                        )
+                                      }
+                                    >
+                                      Remove
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          ) : null}
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   )
                 })}
@@ -269,6 +375,69 @@ export default function DemoDaysPage() {
             </Table>
           </div>
         )}
+        <Dialog
+          open={editingDemoDayId !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingDemoDayId(null)
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit demo date</DialogTitle>
+            </DialogHeader>
+            <Field>
+              <FieldLabel htmlFor="edit-demo-date">Demo date</FieldLabel>
+              <Input
+                id="edit-demo-date"
+                type="date"
+                value={editDemoDate}
+                onChange={(event) => setEditDemoDate(event.target.value)}
+              />
+            </Field>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditingDemoDayId(null)}
+                disabled={isSavingEdit}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={isSavingEdit || !editDemoDate || !editingDemoDayId}
+                onClick={() => {
+                  const demo = (data?.demoDays ?? []).find(
+                    (item) => item._id === editingDemoDayId,
+                  )
+                  if (!demo || !editDemoDate) {
+                    return
+                  }
+                  setIsSavingEdit(true)
+                  void assignDemoDay({
+                    cohortId,
+                    fellowId: demo.fellowId,
+                    demoDate: new Date(editDemoDate).getTime(),
+                  })
+                    .then(() => {
+                      toast.success("Demo date updated.")
+                      setEditingDemoDayId(null)
+                    })
+                    .catch((error: unknown) =>
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : "Update failed.",
+                      ),
+                    )
+                    .finally(() => setIsSavingEdit(false))
+                }}
+              >
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </PageBody>
     </>
   )

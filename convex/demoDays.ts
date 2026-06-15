@@ -1,4 +1,5 @@
 import { v } from "convex/values"
+import { getProgramWeeks } from "./lib/programWeeks"
 import { getFellowForUser, requireFellowForUser } from "./lib/auth"
 import {
   cohortMutation,
@@ -87,6 +88,109 @@ export const assignDemoDay = podManagementMutation({
       throw new Error("Demo day not found")
     }
     return created
+  },
+})
+
+export const generateAllDemoDays = podManagementMutation({
+  args: { cohortId: v.id("cohorts") },
+  returns: v.object({
+    created: v.number(),
+    skipped: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const cohort = await ctx.db.get("cohorts", args.cohortId)
+    if (!cohort) {
+      throw new Error("Cohort not found")
+    }
+
+    const programWeeks = getProgramWeeks(cohort.startDate, cohort.endDate)
+    if (programWeeks.length === 0) {
+      throw new Error("Set cohort start and end dates before generating demo days.")
+    }
+
+    const fellows = (
+      await ctx.db
+        .query("fellows")
+        .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
+        .collect()
+    ).sort((a, b) => a.name.localeCompare(b.name))
+
+    const existingDemoDays = await ctx.db
+      .query("demoDays")
+      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
+      .collect()
+
+    const assignedFellowIds = new Set(
+      existingDemoDays.map((demoDay) => demoDay.fellowId),
+    )
+    const usedWeekStarts = new Set(
+      existingDemoDays.map((demoDay) => demoDay.demoDate),
+    )
+
+    let created = 0
+    let skipped = 0
+    let weekIndex = 0
+    const now = Date.now()
+
+    for (const fellow of fellows) {
+      if (assignedFellowIds.has(fellow._id)) {
+        skipped += 1
+        continue
+      }
+
+      let week = programWeeks[weekIndex % programWeeks.length]
+      let guard = 0
+      while (
+        usedWeekStarts.has(week.weekStart) &&
+        guard < programWeeks.length
+      ) {
+        weekIndex += 1
+        week = programWeeks[weekIndex % programWeeks.length]
+        guard += 1
+      }
+
+      if (usedWeekStarts.has(week.weekStart)) {
+        throw new Error(
+          "All program weeks already have demo days assigned. Edit or remove existing dates first.",
+        )
+      }
+
+      const demoDayId = await ctx.db.insert("demoDays", {
+        cohortId: args.cohortId,
+        fellowId: fellow._id,
+        demoDate: week.weekStart,
+        completed: false,
+        updatedAt: now,
+        updatedByUserId: ctx.user._id,
+      })
+      const inserted = await ctx.db.get("demoDays", demoDayId)
+      if (inserted) {
+        existingDemoDays.push(inserted)
+      }
+      usedWeekStarts.add(week.weekStart)
+      assignedFellowIds.add(fellow._id)
+      weekIndex += 1
+      created += 1
+    }
+
+    return { created, skipped }
+  },
+})
+
+export const removeDemoDay = podManagementMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    demoDayId: v.id("demoDays"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const demoDay = await ctx.db.get("demoDays", args.demoDayId)
+    if (!demoDay || demoDay.cohortId !== args.cohortId) {
+      throw new Error("Demo day not found")
+    }
+
+    await ctx.db.delete("demoDays", args.demoDayId)
+    return null
   },
 })
 

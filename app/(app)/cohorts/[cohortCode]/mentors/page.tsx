@@ -6,6 +6,10 @@ import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
+import {
+  ManageableWeekSlotList,
+  runGenerateAllWeeks,
+} from "@/components/app/manageable-week-slot-list"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Button } from "@/components/ui/button"
@@ -66,6 +70,9 @@ export default function MentorsPage() {
   )
 
   const createRound = useMutation(api.mentors.createRound)
+  const generateAllRounds = useMutation(api.mentors.generateAllRounds)
+  const updateRound = useMutation(api.mentors.updateRound)
+  const deleteRound = useMutation(api.mentors.deleteRound)
   const generateAssignments = useMutation(api.mentors.generateAssignments)
   const updateAssignment = useMutation(api.mentors.updateAssignment)
 
@@ -210,6 +217,17 @@ export default function MentorsPage() {
             </form>
             <Button
               variant="outline"
+              onClick={() =>
+                void runGenerateAllWeeks(
+                  () => generateAllRounds({ cohortId }),
+                  "mentor round",
+                )
+              }
+            >
+              Generate All Weeks
+            </Button>
+            <Button
+              variant="outline"
               onClick={async () => {
                 try {
                   const created = await generateAssignments({ cohortId })
@@ -227,6 +245,31 @@ export default function MentorsPage() {
             </Button>
           </div>
         </PageToolbar>
+
+        <ManageableWeekSlotList
+          title="Mentor meeting weeks"
+          description="Program weeks for mentor 1:1 rounds. Edit dates or remove weeks you do not need."
+          slots={(data.rounds ?? []).map((round) => ({
+            id: round._id,
+            label: round.targetWeekLabel,
+            date: round.targetWeekStart,
+          }))}
+          onUpdate={async (roundId, values) => {
+            await updateRound({
+              cohortId,
+              roundId: roundId as Id<"mentorMeetingRounds">,
+              targetWeekLabel: values.label,
+              targetWeekStart: values.date,
+            })
+          }}
+          onDelete={async (roundId) => {
+            await deleteRound({
+              cohortId,
+              roundId: roundId as Id<"mentorMeetingRounds">,
+            })
+          }}
+          deleteDescription="This removes the week and any mentor assignments for it. Regenerate assignments afterward if needed."
+        />
 
         <Card>
           <CardHeader>

@@ -1,4 +1,10 @@
 import { v } from "convex/values"
+import type { Id } from "./_generated/dataModel"
+import type { MutationCtx } from "./_generated/server"
+import {
+  getProgramWeeks,
+  isSameCalendarDay,
+} from "./lib/programWeeks"
 import { generateMentorAssignments } from "./lib/assignments"
 import {
   getFellowForUser,
@@ -63,6 +69,24 @@ export const addMentor = podManagementMutation({
   },
 })
 
+async function renumberMentorRounds(
+  ctx: MutationCtx,
+  cohortId: Id<"cohorts">,
+) {
+  const rounds = await ctx.db
+    .query("mentorMeetingRounds")
+    .withIndex("by_cohort", (q) => q.eq("cohortId", cohortId))
+    .collect()
+
+  const sorted = rounds.sort((a, b) => a.targetWeekStart - b.targetWeekStart)
+  for (const [index, round] of sorted.entries()) {
+    const roundNumber = index + 1
+    if (round.roundNumber !== roundNumber) {
+      await ctx.db.patch("mentorMeetingRounds", round._id, { roundNumber })
+    }
+  }
+}
+
 export const createRound = podManagementMutation({
   args: {
     cohortId: v.id("cohorts"),
@@ -76,13 +100,139 @@ export const createRound = podManagementMutation({
       .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
       .collect()
 
+    const maxRoundNumber = rounds.reduce(
+      (max, round) => Math.max(max, round.roundNumber),
+      0,
+    )
+
     return await ctx.db.insert("mentorMeetingRounds", {
       cohortId: args.cohortId,
-      roundNumber: rounds.length + 1,
+      roundNumber: maxRoundNumber + 1,
       targetWeekLabel: args.targetWeekLabel.trim(),
       targetWeekStart: args.targetWeekStart,
       createdAt: Date.now(),
     })
+  },
+})
+
+export const generateAllRounds = podManagementMutation({
+  args: { cohortId: v.id("cohorts") },
+  returns: v.object({
+    created: v.number(),
+    skipped: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const cohort = await ctx.db.get("cohorts", args.cohortId)
+    if (!cohort) {
+      throw new Error("Cohort not found")
+    }
+
+    const programWeeks = getProgramWeeks(cohort.startDate, cohort.endDate)
+    const existing = await ctx.db
+      .query("mentorMeetingRounds")
+      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
+      .collect()
+
+    let created = 0
+    let skipped = 0
+    let maxRoundNumber = existing.reduce(
+      (max, round) => Math.max(max, round.roundNumber),
+      0,
+    )
+    const now = Date.now()
+
+    for (const week of programWeeks) {
+      const alreadyExists = existing.some((round) =>
+        isSameCalendarDay(round.targetWeekStart, week.weekStart),
+      )
+      if (alreadyExists) {
+        skipped += 1
+        continue
+      }
+
+      maxRoundNumber += 1
+      const roundId = await ctx.db.insert("mentorMeetingRounds", {
+        cohortId: args.cohortId,
+        roundNumber: maxRoundNumber,
+        targetWeekLabel: week.weekLabel,
+        targetWeekStart: week.weekStart,
+        createdAt: now,
+      })
+      const inserted = await ctx.db.get("mentorMeetingRounds", roundId)
+      if (inserted) {
+        existing.push(inserted)
+      }
+      created += 1
+    }
+
+    await renumberMentorRounds(ctx, args.cohortId)
+    return { created, skipped }
+  },
+})
+
+export const updateRound = podManagementMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    roundId: v.id("mentorMeetingRounds"),
+    targetWeekLabel: v.optional(v.string()),
+    targetWeekStart: v.optional(v.number()),
+  },
+  returns: roundValidator,
+  handler: async (ctx, args) => {
+    const round = await ctx.db.get("mentorMeetingRounds", args.roundId)
+    if (!round || round.cohortId !== args.cohortId) {
+      throw new Error("Round not found")
+    }
+
+    const updates: {
+      targetWeekLabel?: string
+      targetWeekStart?: number
+    } = {}
+
+    if (args.targetWeekLabel !== undefined) {
+      updates.targetWeekLabel = args.targetWeekLabel.trim()
+    }
+    if (args.targetWeekStart !== undefined) {
+      updates.targetWeekStart = args.targetWeekStart
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await ctx.db.patch("mentorMeetingRounds", args.roundId, updates)
+      await renumberMentorRounds(ctx, args.cohortId)
+    }
+
+    const updated = await ctx.db.get("mentorMeetingRounds", args.roundId)
+    if (!updated) {
+      throw new Error("Round not found")
+    }
+    return updated
+  },
+})
+
+export const deleteRound = podManagementMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    roundId: v.id("mentorMeetingRounds"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const round = await ctx.db.get("mentorMeetingRounds", args.roundId)
+    if (!round || round.cohortId !== args.cohortId) {
+      throw new Error("Round not found")
+    }
+
+    const assignments = await ctx.db
+      .query("mentorMeetingAssignments")
+      .withIndex("by_round", (q) => q.eq("roundId", args.roundId))
+      .collect()
+
+    for (const assignment of assignments) {
+      await ctx.db.delete("mentorMeetingAssignments", assignment._id)
+    }
+
+    await ctx.db.delete("mentorMeetingRounds", args.roundId)
+    await renumberMentorRounds(ctx, args.cohortId)
+    return null
   },
 })
 
