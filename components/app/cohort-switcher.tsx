@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { Id } from "@/convex/_generated/dataModel"
 import { isPodCohort, isUmbrellaCohort } from "@/lib/cohort-access"
+import { dashboardPath } from "@/lib/cohort-routes"
 
 type CohortOption = {
   cohort: {
@@ -95,7 +96,7 @@ export function CohortSwitcher({
             <DropdownMenuItem
               key={item.cohort._id}
               onSelect={() =>
-                router.push(`/dashboard?cohort=${item.cohort._id}`)
+                router.push(dashboardPath(item.cohort.programCode))
               }
             >
               <div className="flex min-w-0 flex-col">

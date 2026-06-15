@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery } from "convex/react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
@@ -30,14 +29,25 @@ import {
 } from "@/components/ui/table"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
+import { cohortPath } from "@/lib/cohort-routes"
 import { type OneOnOneStatus, StatusBadge } from "@/lib/status"
+import { useCohortRoute } from "@/lib/use-cohort-route"
 
 export default function OneOnOnesPage() {
-  const params = useParams<{ cohortId: string }>()
-  const cohortId = params.cohortId as Id<"cohorts">
-  const cohort = useQuery(api.cohorts.getCohort, { cohortId })
-  const peerData = useQuery(api.oneOnOnes.listPeerOneOnOnes, { cohortId })
-  const leaderData = useQuery(api.oneOnOnes.listLeaderOneOnOnes, { cohortId })
+  const {
+    cohortId,
+    cohortData: cohort,
+    settingsProgramCode,
+    isLoading,
+  } = useCohortRoute()
+  const peerData = useQuery(
+    api.oneOnOnes.listPeerOneOnOnes,
+    cohortId ? { cohortId } : "skip",
+  )
+  const leaderData = useQuery(
+    api.oneOnOnes.listLeaderOneOnOnes,
+    cohortId ? { cohortId } : "skip",
+  )
   const updatePeerStatus = useMutation(api.oneOnOnes.updatePeerStatus)
   const updateLeaderStatus = useMutation(api.oneOnOnes.updateLeaderStatus)
   const createInstance = useMutation(api.oneOnOnes.createInstance)
@@ -63,6 +73,7 @@ export default function OneOnOnesPage() {
     fellowBId: Id<"fellows">,
     status: OneOnOneStatus,
   ) {
+    if (!cohortId) return
     try {
       await updatePeerStatus({ cohortId, fellowAId, fellowBId, status })
       toast.success("Peer 1:1 updated.")
@@ -76,12 +87,47 @@ export default function OneOnOnesPage() {
     instanceId: Id<"oneOnOneInstances">,
     status: OneOnOneStatus,
   ) {
+    if (!cohortId) return
     try {
       await updateLeaderStatus({ cohortId, fellowId, instanceId, status })
       toast.success("Pod leader 1:1 updated.")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Update failed.")
     }
+  }
+
+  if (isLoading || peerData === undefined || leaderData === undefined) {
+    return (
+      <>
+        <PageHeader
+          title="1:1 Tracker"
+          description="Track peer 1:1s and pod leader check-ins for this cohort."
+        />
+        <PageBody>
+          <EmptyState
+            title="Loading…"
+            description="Fetching 1:1 data for this pod."
+          />
+        </PageBody>
+      </>
+    )
+  }
+
+  if (!cohortId || !cohort) {
+    return (
+      <>
+        <PageHeader
+          title="1:1 Tracker"
+          description="Track peer 1:1s and pod leader check-ins for this cohort."
+        />
+        <PageBody>
+          <EmptyState
+            title="Cohort not found"
+            description="This program code does not match a cohort you can access."
+          />
+        </PageBody>
+      </>
+    )
   }
 
   if (isUmbrellaAdminBlocked) {
@@ -92,7 +138,9 @@ export default function OneOnOnesPage() {
           description="Track peer 1:1s and pod leader check-ins for this cohort."
         />
         <PageBody>
-          <UmbrellaAdminActivityNotice cohortId={cohortId} />
+          <UmbrellaAdminActivityNotice
+            settingsProgramCode={settingsProgramCode ?? ""}
+          />
         </PageBody>
       </>
     )
@@ -160,7 +208,14 @@ export default function OneOnOnesPage() {
                 <Button
                   variant="outline"
                   nativeButton={false}
-                  render={<Link href={`/cohorts/${cohortId}/settings`} />}
+                  render={
+                    <Link
+                      href={cohortPath(
+                        settingsProgramCode ?? cohort?.cohort.programCode ?? "",
+                        "settings",
+                      )}
+                    />
+                  }
                 >
                   Go to Cohort Settings
                 </Button>

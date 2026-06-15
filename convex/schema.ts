@@ -32,7 +32,8 @@ export default defineSchema({
     groupNumber: v.optional(v.number()),
   })
     .index("by_status", ["status"])
-    .index("by_parent", ["parentCohortId"]),
+    .index("by_parent", ["parentCohortId"])
+    .index("by_program_code", ["programCode"]),
 
   cohortMemberships: defineTable({
     cohortId: v.id("cohorts"),

@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
+import { cohortPath } from "@/lib/cohort-routes"
 import { formatDate } from "@/lib/dates"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
 import type { OneOnOneStatus } from "@/lib/status"
@@ -25,9 +25,9 @@ import type { OneOnOneStatus } from "@/lib/status"
 export default function MyTasksPageClient() {
   const searchParams = useSearchParams()
   const cohorts = useQuery(api.cohorts.listMyCohorts, {})
-  const requestedCohortId = searchParams.get("cohort") as Id<"cohorts"> | null
+  const requestedCohortCode = searchParams.get("cohort")
   const activeCohortEntry =
-    cohorts?.find((item) => item.cohort._id === requestedCohortId) ??
+    cohorts?.find((item) => item.cohort.programCode === requestedCohortCode) ??
     cohorts?.[0]
   const cohortId = activeCohortEntry?.cohort._id
   const cohortDetails = useQuery(
@@ -111,7 +111,14 @@ export default function MyTasksPageClient() {
             <Button
               variant="outline"
               nativeButton={false}
-              render={<Link href={`/cohorts/${cohortId}/one-on-ones`} />}
+              render={
+                <Link
+                  href={cohortPath(
+                    activeCohortEntry.cohort.programCode,
+                    "one-on-ones",
+                  )}
+                />
+              }
             >
               Open Full Tracker
             </Button>

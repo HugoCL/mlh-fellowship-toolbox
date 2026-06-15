@@ -24,6 +24,7 @@ import {
   isPodOnlyLeader,
   isUmbrellaAdmin,
 } from "@/lib/cohort-access"
+import { cohortPath, dashboardPath } from "@/lib/cohort-routes"
 import { formatDate } from "@/lib/dates"
 
 export default function CohortsPage() {
@@ -63,7 +64,7 @@ export default function CohortsPage() {
 
     setIsSubmitting(true)
     try {
-      const cohortId = await createCohort({
+      const created = await createCohort({
         name,
         programCode,
         startDate: new Date(startDate).getTime(),
@@ -72,7 +73,7 @@ export default function CohortsPage() {
       toast.success("Cohort created.")
       resetForm()
       setDialogOpen(false)
-      window.location.href = `/cohorts/${cohortId}/settings`
+      window.location.href = cohortPath(created.programCode, "settings")
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to create cohort.",
@@ -123,7 +124,7 @@ export default function CohortsPage() {
                   size="sm"
                   nativeButton={false}
                   render={
-                    <Link href={`/dashboard?cohort=${item.cohort._id}`} />
+                    <Link href={dashboardPath(item.cohort.programCode)} />
                   }
                 >
                   {isPodCohort(item.cohort) ? "Open pod" : "Open"}

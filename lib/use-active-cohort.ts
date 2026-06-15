@@ -2,17 +2,16 @@
 
 import { useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
 
-export function useActiveCohortContext(cohortId: Id<"cohorts"> | null) {
+export function useActiveCohortContext(programCode: string | null) {
   const cohort = useQuery(
-    api.cohorts.getCohort,
-    cohortId ? { cohortId } : "skip",
+    api.cohorts.getCohortByProgramCode,
+    programCode ? { programCode } : "skip",
   )
 
   return {
     cohort,
-    isLoading: cohortId !== null && cohort === undefined,
+    isLoading: programCode !== null && cohort === undefined,
     canManagePod: cohort?.canManagePod ?? false,
     hasChildPods: cohort?.hasChildPods ?? false,
     isPod: Boolean(cohort?.cohort.parentCohortId),

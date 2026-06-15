@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react"
 import { CopyIcon, UserPlusIcon } from "lucide-react"
-import { useParams, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
@@ -42,6 +42,7 @@ import type { Id } from "@/convex/_generated/dataModel"
 import { inviteUrl } from "@/lib/invite-url"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
 import { useActiveCohortContext } from "@/lib/use-active-cohort"
+import { useCohortRoute } from "@/lib/use-cohort-route"
 
 function roleBadgeLabel(role: "podLeader" | "fellow" | "mentor"): string {
   switch (role) {
@@ -55,11 +56,13 @@ function roleBadgeLabel(role: "podLeader" | "fellow" | "mentor"): string {
 }
 
 export default function DirectoryPage() {
-  const params = useParams<{ cohortId: string }>()
+  const { programCode, cohortId } = useCohortRoute()
   const searchParams = useSearchParams()
-  const cohortId = params.cohortId as Id<"cohorts">
-  const { cohort: cohortData, isLoading } = useActiveCohortContext(cohortId)
-  const directory = useQuery(api.directory.getDirectory, { cohortId })
+  const { cohort: cohortData, isLoading } = useActiveCohortContext(programCode)
+  const directory = useQuery(
+    api.directory.getDirectory,
+    cohortId ? { cohortId } : "skip",
+  )
   const inviteMember = useMutation(api.directory.inviteDirectoryMember)
 
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -103,7 +106,7 @@ export default function DirectoryPage() {
     )
   }
 
-  if (!cohortData || !isPod) {
+  if (!cohortData || !cohortId || !isPod) {
     return (
       <>
         <PageHeader

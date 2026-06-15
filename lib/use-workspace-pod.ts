@@ -5,10 +5,17 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useMemo } from "react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
-import { getCohortIdFromPath, isFeaturePagePath } from "@/lib/workspace-pod"
+import {
+  cohortPath,
+  dashboardPath,
+  getCohortCodeFromPath,
+  getFeatureSegmentFromPath,
+  isFeaturePagePath,
+} from "@/lib/cohort-routes"
 
 export function useWorkspacePod(
   umbrellaCohortId: Id<"cohorts"> | undefined,
+  umbrellaProgramCode: string | undefined,
   showUmbrellaAdminView: boolean,
 ) {
   const pathname = usePathname()
@@ -22,37 +29,55 @@ export function useWorkspacePod(
       : "skip",
   )
 
-  const podIds = useMemo(
-    () => new Set((groups ?? []).map((group) => group.cohort._id)),
+  const podProgramCodes = useMemo(
+    () => new Set((groups ?? []).map((group) => group.cohort.programCode)),
     [groups],
   )
 
-  const pathCohortId = getCohortIdFromPath(pathname)
-  const pathPodId =
-    pathCohortId && podIds.has(pathCohortId) ? pathCohortId : null
-  const queryPodParam = searchParams.get("pod") as Id<"cohorts"> | null
-  const queryPodId =
-    queryPodParam && podIds.has(queryPodParam) ? queryPodParam : null
+  const pathProgramCode = getCohortCodeFromPath(pathname)
+  const pathPod =
+    pathProgramCode && podProgramCodes.has(pathProgramCode)
+      ? (groups ?? []).find(
+          (group) => group.cohort.programCode === pathProgramCode,
+        )
+      : null
+  const queryPodParam = searchParams.get("pod")
+  const queryPod =
+    queryPodParam && podProgramCodes.has(queryPodParam)
+      ? (groups ?? []).find(
+          (group) => group.cohort.programCode === queryPodParam,
+        )
+      : null
 
   const selectedPodId =
-    pathPodId ?? queryPodId ?? groups?.[0]?.cohort._id ?? null
+    pathPod?.cohort._id ??
+    queryPod?.cohort._id ??
+    groups?.[0]?.cohort._id ??
+    null
 
   const selectedPod = (groups ?? []).find(
     (group) => group.cohort._id === selectedPodId,
   )
 
   function selectPod(podId: Id<"cohorts">) {
-    if (!umbrellaCohortId) {
+    if (!umbrellaCohortId || !umbrellaProgramCode) {
       return
     }
 
-    if (isFeaturePagePath(pathname) && pathPodId) {
-      const segment = pathname.replace(/^\/cohorts\/[^/]+\//, "")
-      router.push(`/cohorts/${podId}/${segment}`)
+    const pod = (groups ?? []).find((group) => group.cohort._id === podId)
+    if (!pod) {
       return
     }
 
-    router.push(`/dashboard?cohort=${umbrellaCohortId}&pod=${podId}`)
+    if (isFeaturePagePath(pathname)) {
+      const segment = getFeatureSegmentFromPath(pathname)
+      if (segment) {
+        router.push(cohortPath(pod.cohort.programCode, segment))
+        return
+      }
+    }
+
+    router.push(dashboardPath(umbrellaProgramCode, pod.cohort.programCode))
   }
 
   return {

@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react"
 import { CopyIcon } from "lucide-react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useCohortRoute } from "@/lib/use-cohort-route"
 import { useState } from "react"
 import { toast } from "sonner"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
@@ -30,21 +30,24 @@ import {
 } from "@/components/ui/table"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
+import { cohortPath } from "@/lib/cohort-routes"
 import { inviteUrl } from "@/lib/invite-url"
 
-export default function CohortSettingsPage() {
-  const params = useParams<{ cohortId: string }>()
-  const cohortId = params.cohortId as Id<"cohorts">
-  const cohortData = useQuery(api.cohorts.getCohort, { cohortId })
+export function CohortSettingsPage() {
+  const { cohortId, cohortData, isLoading } = useCohortRoute()
 
   const isPod = Boolean(cohortData?.cohort.parentCohortId)
   const groups = useQuery(
     api.cohorts.listGroupsForParent,
-    !isPod && cohortData?.role === "podLeader" ? { cohortId } : "skip",
+    !isPod && cohortData?.role === "podLeader" && cohortId
+      ? { cohortId }
+      : "skip",
   )
   const invites = useQuery(
     api.invites.listPendingForCohort,
-    !isPod && cohortData?.role === "podLeader" ? { cohortId } : "skip",
+    !isPod && cohortData?.role === "podLeader" && cohortId
+      ? { cohortId }
+      : "skip",
   )
 
   const addPodLeader = useMutation(api.cohorts.addPodLeaderByEmail)
@@ -62,7 +65,39 @@ export default function CohortSettingsPage() {
     (group) => !group.leader && !group.pendingLeaderEmail,
   )
 
-  if (cohortData?.role !== "podLeader") {
+  if (isLoading || cohortData === undefined) {
+    return (
+      <>
+        <PageHeader
+          title="Settings"
+          description="Loading cohort settings…"
+        />
+        <PageBody>
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </PageBody>
+      </>
+    )
+  }
+
+  if (!cohortId) {
+    return (
+      <>
+        <PageHeader
+          title="Settings"
+          description="Cohort not found."
+        />
+        <PageBody>
+          <Alert>
+            <AlertDescription>
+              This program code does not match a cohort you can access.
+            </AlertDescription>
+          </Alert>
+        </PageBody>
+      </>
+    )
+  }
+
+  if (cohortData.role !== "podLeader") {
     return (
       <>
         <PageHeader
@@ -130,7 +165,7 @@ export default function CohortSettingsPage() {
               <AlertDescription>
                 Invite fellows and mentors from the{" "}
                 <Link
-                  href={`/cohorts/${cohortId}/directory`}
+                  href={cohortPath(cohortData.cohort.programCode, "directory")}
                   className="font-medium underline"
                 >
                   Directory
@@ -140,7 +175,11 @@ export default function CohortSettingsPage() {
               </AlertDescription>
             </Alert>
             <Button
-              render={<Link href={`/cohorts/${cohortId}/directory`} />}
+              render={
+                <Link
+                  href={cohortPath(cohortData.cohort.programCode, "directory")}
+                />
+              }
               nativeButton={false}
               className="self-start"
             >

@@ -6,6 +6,7 @@ import {
 import { mutation, query } from "../_generated/server"
 import {
   getCurrentUser,
+  lookupCohortByProgramCode,
   requireDirectoryManagement,
   requirePodLeader,
   requirePodManagementLeader,
@@ -41,6 +42,27 @@ export const cohortQuery = customQuery(query, {
         user,
         membership: cohortAccess.membership,
         cohortAccess,
+        cohortId: args.cohortId,
+      },
+      args,
+    }
+  },
+})
+
+export const cohortCodeQuery = customQuery(query, {
+  args: { programCode: v.string() },
+  input: async (ctx, args) => {
+    const user = await getCurrentUser(ctx)
+    const cohort = await lookupCohortByProgramCode(ctx, args.programCode)
+    const cohortAccess = await resolveCohortAccess(ctx, cohort._id, user._id)
+
+    return {
+      ctx: {
+        ...ctx,
+        user,
+        membership: cohortAccess.membership,
+        cohortAccess,
+        cohortId: cohort._id,
       },
       args,
     }

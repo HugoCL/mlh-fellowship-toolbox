@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery } from "convex/react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
@@ -23,13 +22,21 @@ import {
 } from "@/components/ui/table"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
+import { cohortPath } from "@/lib/cohort-routes"
 import { formatDate, formatWeekLabel } from "@/lib/dates"
+import { useCohortRoute } from "@/lib/use-cohort-route"
 
 export default function MentorsPage() {
-  const params = useParams<{ cohortId: string }>()
-  const cohortId = params.cohortId as Id<"cohorts">
-  const cohort = useQuery(api.cohorts.getCohort, { cohortId })
-  const data = useQuery(api.mentors.listAssignments, { cohortId })
+  const {
+    cohortId,
+    cohortData: cohort,
+    settingsProgramCode,
+    isLoading,
+  } = useCohortRoute()
+  const data = useQuery(
+    api.mentors.listAssignments,
+    cohortId ? { cohortId } : "skip",
+  )
   const createRound = useMutation(api.mentors.createRound)
   const generateAssignments = useMutation(api.mentors.generateAssignments)
   const updateAssignment = useMutation(api.mentors.updateAssignment)
@@ -48,6 +55,40 @@ export default function MentorsPage() {
     (data?.mentors ?? []).map((mentor) => [mentor._id, mentor]),
   )
 
+  if (isLoading || data === undefined) {
+    return (
+      <>
+        <PageHeader
+          title="Mentor Meetings"
+          description="Assign and track external mentor 1:1s across the program."
+        />
+        <PageBody>
+          <EmptyState
+            title="Loading…"
+            description="Fetching mentor assignments for this pod."
+          />
+        </PageBody>
+      </>
+    )
+  }
+
+  if (!cohortId || !cohort) {
+    return (
+      <>
+        <PageHeader
+          title="Mentor Meetings"
+          description="Assign and track external mentor 1:1s across the program."
+        />
+        <PageBody>
+          <EmptyState
+            title="Cohort not found"
+            description="This program code does not match a cohort you can access."
+          />
+        </PageBody>
+      </>
+    )
+  }
+
   if (isUmbrellaAdminBlocked) {
     return (
       <>
@@ -56,7 +97,9 @@ export default function MentorsPage() {
           description="Assign and track external mentor 1:1s across the program."
         />
         <PageBody>
-          <UmbrellaAdminActivityNotice cohortId={cohortId} />
+          <UmbrellaAdminActivityNotice
+            settingsProgramCode={settingsProgramCode ?? ""}
+          />
         </PageBody>
       </>
     )
@@ -184,7 +227,14 @@ export default function MentorsPage() {
                 <Button
                   variant="outline"
                   nativeButton={false}
-                  render={<Link href={`/cohorts/${cohortId}/settings`} />}
+                  render={
+                    <Link
+                      href={cohortPath(
+                        settingsProgramCode ?? cohort?.cohort.programCode ?? "",
+                        "settings",
+                      )}
+                    />
+                  }
                 >
                   Go to Cohort Settings
                 </Button>

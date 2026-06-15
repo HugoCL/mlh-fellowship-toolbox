@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel"
 import type { MutationCtx, QueryCtx } from "../_generated/server"
+import { assertProgramCodeAvailable } from "./auth"
 import { buildGroupProgramCode } from "./programCode"
 
 export async function getNextGroupNumber(
@@ -54,6 +55,8 @@ export async function createEmptyPodGroup(
     parentCohort.programCode,
     groupNumber,
   )
+
+  await assertProgramCodeAvailable(ctx, programCode)
 
   const groupId = await ctx.db.insert("cohorts", {
     name: `${parentCohort.name} · Pod ${groupNumber}`,

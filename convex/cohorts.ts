@@ -1,5 +1,12 @@
 import { v } from "convex/values"
-import { getFellowForUser, getMentorForUser } from "./lib/auth"
+import type { Id } from "./_generated/dataModel"
+import type { QueryCtx } from "./_generated/server"
+import {
+  assertProgramCodeAvailable,
+  type CohortAccess,
+  getFellowForUser,
+  getMentorForUser,
+} from "./lib/auth"
 import {
   canManagePodAsLeader,
   isUmbrellaCohort,
@@ -8,6 +15,7 @@ import {
 import {
   authedMutation,
   authedQuery,
+  cohortCodeQuery,
   cohortQuery,
   umbrellaLeaderMutation,
   umbrellaLeaderQuery,
@@ -33,6 +41,58 @@ const cohortWithRoleValidator = v.object({
   role: roleValidator,
 })
 
+const cohortDetailsValidator = v.object({
+  cohort: cohortValidator,
+  role: roleValidator,
+  fellow: v.union(fellowValidator, v.null()),
+  mentor: v.union(mentorValidator, v.null()),
+  hasChildPods: v.boolean(),
+  canManagePod: v.boolean(),
+  isUmbrellaViewer: v.boolean(),
+  parentProgramCode: v.union(v.string(), v.null()),
+})
+
+type CohortDetailsCtx = QueryCtx & {
+  user: { _id: Id<"users"> }
+  membership: { role: "podLeader" | "fellow" | "mentor" }
+  cohortAccess: CohortAccess
+}
+
+async function buildCohortDetails(
+  ctx: CohortDetailsCtx,
+  cohortId: Id<"cohorts">,
+) {
+  const cohort = ctx.cohortAccess.cohort
+  const isUmbrellaViewer = ctx.cohortAccess.kind === "umbrellaViewer"
+
+  const fellow = await getFellowForUser(ctx, cohortId, ctx.user._id)
+  const mentor = await getMentorForUser(ctx, cohortId, ctx.user._id)
+  const hasChildPods = isUmbrellaCohort(cohort)
+    ? await parentHasChildPods(ctx, cohortId)
+    : false
+  const canManagePod =
+    ctx.membership.role === "podLeader" &&
+    canManagePodAsLeader(cohort, hasChildPods) &&
+    !isUmbrellaViewer
+
+  let parentProgramCode: string | null = null
+  if (cohort.parentCohortId) {
+    const parent = await ctx.db.get("cohorts", cohort.parentCohortId)
+    parentProgramCode = parent?.programCode ?? null
+  }
+
+  return {
+    cohort,
+    role: ctx.membership.role,
+    fellow,
+    mentor,
+    hasChildPods,
+    canManagePod,
+    isUmbrellaViewer,
+    parentProgramCode,
+  }
+}
+
 export const listMyCohorts = authedQuery({
   args: {},
   returns: v.array(cohortWithRoleValidator),
@@ -56,38 +116,17 @@ export const listMyCohorts = authedQuery({
 
 export const getCohort = cohortQuery({
   args: { cohortId: v.id("cohorts") },
-  returns: v.object({
-    cohort: cohortValidator,
-    role: roleValidator,
-    fellow: v.union(fellowValidator, v.null()),
-    mentor: v.union(mentorValidator, v.null()),
-    hasChildPods: v.boolean(),
-    canManagePod: v.boolean(),
-    isUmbrellaViewer: v.boolean(),
-  }),
+  returns: cohortDetailsValidator,
   handler: async (ctx, args) => {
-    const cohort = ctx.cohortAccess.cohort
-    const isUmbrellaViewer = ctx.cohortAccess.kind === "umbrellaViewer"
+    return await buildCohortDetails(ctx, args.cohortId)
+  },
+})
 
-    const fellow = await getFellowForUser(ctx, args.cohortId, ctx.user._id)
-    const mentor = await getMentorForUser(ctx, args.cohortId, ctx.user._id)
-    const hasChildPods = isUmbrellaCohort(cohort)
-      ? await parentHasChildPods(ctx, args.cohortId)
-      : false
-    const canManagePod =
-      ctx.membership.role === "podLeader" &&
-      canManagePodAsLeader(cohort, hasChildPods) &&
-      !isUmbrellaViewer
-
-    return {
-      cohort,
-      role: ctx.membership.role,
-      fellow,
-      mentor,
-      hasChildPods,
-      canManagePod,
-      isUmbrellaViewer,
-    }
+export const getCohortByProgramCode = cohortCodeQuery({
+  args: { programCode: v.string() },
+  returns: cohortDetailsValidator,
+  handler: async (ctx) => {
+    return await buildCohortDetails(ctx, ctx.cohortId)
   },
 })
 
@@ -98,7 +137,10 @@ export const createCohort = authedMutation({
     startDate: v.number(),
     endDate: v.number(),
   },
-  returns: v.id("cohorts"),
+  returns: v.object({
+    cohortId: v.id("cohorts"),
+    programCode: v.string(),
+  }),
   handler: async (ctx, args) => {
     const memberships = await ctx.db
       .query("cohortMemberships")
@@ -124,6 +166,7 @@ export const createCohort = authedMutation({
     }
 
     const normalizedProgramCode = baseProgramCode(args.programCode.trim())
+    await assertProgramCodeAvailable(ctx, normalizedProgramCode)
 
     const cohortId = await ctx.db.insert("cohorts", {
       name: args.name,
@@ -156,7 +199,7 @@ export const createCohort = authedMutation({
       createdAt: Date.now(),
     })
 
-    return cohortId
+    return { cohortId, programCode: normalizedProgramCode }
   },
 })
 

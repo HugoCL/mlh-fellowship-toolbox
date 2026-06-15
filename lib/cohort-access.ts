@@ -4,6 +4,15 @@ type CohortRef = {
   parentCohortId?: Id<"cohorts">
 }
 
+type CohortTitleRef = CohortRef & {
+  name: string
+  programCode: string
+}
+
+export function cohortDisplayTitle(cohort: CohortTitleRef): string {
+  return isPodCohort(cohort) ? cohort.programCode : cohort.name
+}
+
 export type CohortRole = "podLeader" | "fellow" | "mentor"
 
 type MembershipRef = {

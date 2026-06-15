@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery } from "convex/react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
@@ -31,13 +30,21 @@ import {
 } from "@/components/ui/table"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
+import { cohortPath } from "@/lib/cohort-routes"
 import { formatDate } from "@/lib/dates"
+import { useCohortRoute } from "@/lib/use-cohort-route"
 
 export default function DemoDaysPage() {
-  const params = useParams<{ cohortId: string }>()
-  const cohortId = params.cohortId as Id<"cohorts">
-  const cohort = useQuery(api.cohorts.getCohort, { cohortId })
-  const data = useQuery(api.demoDays.listDemoDays, { cohortId })
+  const {
+    cohortId,
+    cohortData: cohort,
+    settingsProgramCode,
+    isLoading,
+  } = useCohortRoute()
+  const data = useQuery(
+    api.demoDays.listDemoDays,
+    cohortId ? { cohortId } : "skip",
+  )
   const assignDemoDay = useMutation(api.demoDays.assignDemoDay)
   const updateDemoCompletion = useMutation(api.demoDays.updateDemoCompletion)
 
@@ -55,6 +62,40 @@ export default function DemoDaysPage() {
     (data?.demoDays ?? []).map((demo) => [demo.fellowId, demo]),
   )
 
+  if (isLoading || data === undefined) {
+    return (
+      <>
+        <PageHeader
+          title="Demo Days"
+          description="Assign presentation dates and track demo completion."
+        />
+        <PageBody>
+          <EmptyState
+            title="Loading…"
+            description="Fetching demo day assignments for this pod."
+          />
+        </PageBody>
+      </>
+    )
+  }
+
+  if (!cohortId || !cohort) {
+    return (
+      <>
+        <PageHeader
+          title="Demo Days"
+          description="Assign presentation dates and track demo completion."
+        />
+        <PageBody>
+          <EmptyState
+            title="Cohort not found"
+            description="This program code does not match a cohort you can access."
+          />
+        </PageBody>
+      </>
+    )
+  }
+
   if (isUmbrellaAdminBlocked) {
     return (
       <>
@@ -63,7 +104,9 @@ export default function DemoDaysPage() {
           description="Assign presentation dates and track demo completion."
         />
         <PageBody>
-          <UmbrellaAdminActivityNotice cohortId={cohortId} />
+          <UmbrellaAdminActivityNotice
+            settingsProgramCode={settingsProgramCode ?? ""}
+          />
         </PageBody>
       </>
     )
@@ -157,7 +200,14 @@ export default function DemoDaysPage() {
                 <Button
                   variant="outline"
                   nativeButton={false}
-                  render={<Link href={`/cohorts/${cohortId}/settings`} />}
+                  render={
+                    <Link
+                      href={cohortPath(
+                        settingsProgramCode ?? cohort?.cohort.programCode ?? "",
+                        "settings",
+                      )}
+                    />
+                  }
                 >
                   Go to Cohort Settings
                 </Button>

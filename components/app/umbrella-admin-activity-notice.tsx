@@ -1,11 +1,11 @@
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import type { Id } from "@/convex/_generated/dataModel"
+import { cohortPath } from "@/lib/cohort-routes"
 
 export function UmbrellaAdminActivityNotice({
-  cohortId,
+  settingsProgramCode,
 }: {
-  cohortId: Id<"cohorts">
+  settingsProgramCode: string
 }) {
   return (
     <Alert>
@@ -13,7 +13,7 @@ export function UmbrellaAdminActivityNotice({
         Pod leaders manage mentors, 1:1s, and activities inside their own pods.
         Use{" "}
         <Link
-          href={`/cohorts/${cohortId}/settings`}
+          href={cohortPath(settingsProgramCode, "settings")}
           className="font-medium text-foreground underline-offset-4 hover:underline"
         >
           Cohort Settings

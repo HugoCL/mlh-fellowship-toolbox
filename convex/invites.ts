@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server"
 import { getCurrentUser, getOrCreateCurrentUser } from "./lib/auth"
 import { umbrellaLeaderQuery } from "./lib/customFunctions"
 import { acceptInviteForUser } from "./lib/inviteAcceptance"
+import { cohortWorkspacePath } from "./lib/programCode"
 import {
   cohortValidator,
   inviteStatusValidator,
@@ -115,10 +116,15 @@ export const acceptInviteByToken = mutation({
       }
     }
 
+    const redirectCohort = await ctx.db.get("cohorts", redirectCohortId)
+    if (!redirectCohort) {
+      throw new Error("Cohort not found")
+    }
+
     const redirectPath =
       invite.role === "podLeader"
-        ? `/dashboard?cohort=${invite.cohortId}`
-        : `/cohorts/${redirectCohortId}/directory?setup=scheduling`
+        ? `/dashboard?cohort=${encodeURIComponent(cohort.programCode)}`
+        : `${cohortWorkspacePath(redirectCohort.programCode, "directory")}?setup=scheduling`
 
     return {
       cohortId: redirectCohortId,

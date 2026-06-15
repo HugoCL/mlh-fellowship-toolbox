@@ -15,11 +15,12 @@ import {
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
 import {
+  cohortDisplayTitle,
   isCohortAdminOnUmbrella,
   isUmbrellaAdminView,
 } from "@/lib/cohort-access"
+import { cohortPath } from "@/lib/cohort-routes"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
 import { ProgressStat } from "@/lib/status"
 import { useWorkspacePod } from "@/lib/use-workspace-pod"
@@ -27,9 +28,9 @@ import { useWorkspacePod } from "@/lib/use-workspace-pod"
 export default function DashboardPageClient() {
   const searchParams = useSearchParams()
   const cohorts = useQuery(api.cohorts.listMyCohorts, {})
-  const requestedCohortId = searchParams.get("cohort") as Id<"cohorts"> | null
+  const requestedCohortCode = searchParams.get("cohort")
   const activeCohort =
-    cohorts?.find((item) => item.cohort._id === requestedCohortId) ??
+    cohorts?.find((item) => item.cohort.programCode === requestedCohortCode) ??
     cohorts?.[0]
 
   const cohortDetails = useQuery(
@@ -51,6 +52,7 @@ export default function DashboardPageClient() {
 
   const { selectedPodId, selectedPod, groups, hasPods } = useWorkspacePod(
     isCohortAdmin && activeCohort ? activeCohort.cohort._id : undefined,
+    isCohortAdmin && activeCohort ? activeCohort.cohort.programCode : undefined,
     Boolean(isCohortAdmin && activeCohort),
   )
 
@@ -147,7 +149,7 @@ export default function DashboardPageClient() {
     return (
       <>
         <PageHeader
-          title={activeCohort.cohort.name}
+          title={cohortDisplayTitle(activeCohort.cohort)}
           description={dashboardDescription()}
         />
         <PageBody>
@@ -173,9 +175,14 @@ export default function DashboardPageClient() {
             </div>
             <Button
               nativeButton={false}
-              render={
-                <Link href={`/cohorts/${activeCohort.cohort._id}/settings`} />
-              }
+                render={
+                  <Link
+                    href={cohortPath(
+                      activeCohort.cohort.programCode,
+                      "settings",
+                    )}
+                  />
+                }
             >
               Cohort Settings
             </Button>
@@ -188,11 +195,11 @@ export default function DashboardPageClient() {
   return (
     <>
       <PageHeader
-        title={
+        title={cohortDisplayTitle(
           showUmbrellaAdminView && selectedPod
-            ? selectedPod.cohort.name
-            : activeCohort.cohort.name
-        }
+            ? selectedPod.cohort
+            : activeCohort.cohort,
+        )}
         description={dashboardDescription()}
       />
       <PageBody>

@@ -70,6 +70,38 @@ export async function getOrCreateCurrentUser(
   return user
 }
 
+export async function lookupCohortByProgramCode(
+  ctx: Ctx,
+  programCode: string,
+): Promise<Doc<"cohorts">> {
+  const cohort = await ctx.db
+    .query("cohorts")
+    .withIndex("by_program_code", (q) =>
+      q.eq("programCode", programCode.trim()),
+    )
+    .unique()
+
+  if (!cohort) {
+    throw new Error("Cohort not found")
+  }
+
+  return cohort
+}
+
+export async function assertProgramCodeAvailable(
+  ctx: MutationCtx,
+  programCode: string,
+): Promise<void> {
+  const existing = await ctx.db
+    .query("cohorts")
+    .withIndex("by_program_code", (q) => q.eq("programCode", programCode))
+    .unique()
+
+  if (existing) {
+    throw new Error(`Program code "${programCode}" is already in use`)
+  }
+}
+
 export async function getMembership(
   ctx: Ctx,
   cohortId: Id<"cohorts">,
