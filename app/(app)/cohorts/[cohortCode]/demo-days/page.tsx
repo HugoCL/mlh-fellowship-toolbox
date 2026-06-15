@@ -50,7 +50,12 @@ import {
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
-import { formatDate, toDateInputValue } from "@/lib/dates"
+import {
+  formatDate,
+  PROGRAM_TIMEZONE_LABEL,
+  parseProgramDate,
+  toDateInputValue,
+} from "@/lib/dates"
 import { useCohortRoute } from "@/lib/use-cohort-route"
 
 export default function DemoDaysPage() {
@@ -71,9 +76,8 @@ export default function DemoDaysPage() {
 
   const [selectedFellow, setSelectedFellow] = useState<string>("")
   const [demoDate, setDemoDate] = useState("")
-  const [editingDemoDayId, setEditingDemoDayId] = useState<Id<"demoDays"> | null>(
-    null,
-  )
+  const [editingDemoDayId, setEditingDemoDayId] =
+    useState<Id<"demoDays"> | null>(null)
   const [editDemoDate, setEditDemoDate] = useState("")
   const [isSavingEdit, setIsSavingEdit] = useState(false)
 
@@ -168,7 +172,7 @@ export default function DemoDaysPage() {
                   await assignDemoDay({
                     cohortId,
                     fellowId: selectedFellow as Id<"fellows">,
-                    demoDate: new Date(demoDate).getTime(),
+                    demoDate: parseProgramDate(demoDate),
                   })
                   toast.success("Demo day assigned.")
                   setDemoDate("")
@@ -202,7 +206,9 @@ export default function DemoDaysPage() {
                 </Select>
               </Field>
               <Field>
-                <FieldLabel htmlFor="demo-date">Demo date</FieldLabel>
+                <FieldLabel htmlFor="demo-date">
+                  Demo date ({PROGRAM_TIMEZONE_LABEL})
+                </FieldLabel>
                 <Input
                   id="demo-date"
                   type="date"
@@ -312,7 +318,9 @@ export default function DemoDaysPage() {
                                 aria-label={`Edit demo date for ${fellow.name}`}
                                 onClick={() => {
                                   setEditingDemoDayId(demo._id)
-                                  setEditDemoDate(toDateInputValue(demo.demoDate))
+                                  setEditDemoDate(
+                                    toDateInputValue(demo.demoDate),
+                                  )
                                 }}
                               >
                                 <PencilIcon className="size-4" />
@@ -341,7 +349,9 @@ export default function DemoDaysPage() {
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() =>
                                         void removeDemoDay({
@@ -388,7 +398,9 @@ export default function DemoDaysPage() {
               <DialogTitle>Edit demo date</DialogTitle>
             </DialogHeader>
             <Field>
-              <FieldLabel htmlFor="edit-demo-date">Demo date</FieldLabel>
+              <FieldLabel htmlFor="edit-demo-date">
+                Demo date ({PROGRAM_TIMEZONE_LABEL})
+              </FieldLabel>
               <Input
                 id="edit-demo-date"
                 type="date"
@@ -417,7 +429,7 @@ export default function DemoDaysPage() {
                   void assignDemoDay({
                     cohortId,
                     fellowId: demo.fellowId,
-                    demoDate: new Date(editDemoDate).getTime(),
+                    demoDate: parseProgramDate(editDemoDate),
                   })
                     .then(() => {
                       toast.success("Demo date updated.")

@@ -25,7 +25,11 @@ import {
   isUmbrellaAdmin,
 } from "@/lib/cohort-access"
 import { cohortPath, dashboardPath } from "@/lib/cohort-routes"
-import { formatDate } from "@/lib/dates"
+import {
+  formatDate,
+  PROGRAM_TIMEZONE_LABEL,
+  parseProgramDate,
+} from "@/lib/dates"
 
 export default function CohortsPage() {
   const cohorts = useQuery(api.cohorts.listMyCohorts, {})
@@ -70,8 +74,8 @@ export default function CohortsPage() {
       const created = await createCohort({
         name,
         programCode,
-        startDate: new Date(startDate).getTime(),
-        endDate: new Date(endDate).getTime(),
+        startDate: parseProgramDate(startDate),
+        endDate: parseProgramDate(endDate),
       })
       toast.success("Cohort created.")
       resetForm()
@@ -177,7 +181,9 @@ export default function CohortsPage() {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="start-date">Start date</FieldLabel>
+              <FieldLabel htmlFor="start-date">
+                Start date ({PROGRAM_TIMEZONE_LABEL})
+              </FieldLabel>
               <Input
                 id="start-date"
                 name="startDate"
@@ -187,7 +193,9 @@ export default function CohortsPage() {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="end-date">End date</FieldLabel>
+              <FieldLabel htmlFor="end-date">
+                End date ({PROGRAM_TIMEZONE_LABEL})
+              </FieldLabel>
               <Input
                 id="end-date"
                 name="endDate"

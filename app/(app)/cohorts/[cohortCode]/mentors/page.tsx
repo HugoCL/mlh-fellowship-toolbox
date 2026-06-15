@@ -34,7 +34,12 @@ import {
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
-import { formatDate, formatWeekDateRange, formatWeekLabel } from "@/lib/dates"
+import {
+  formatWeekDateRange,
+  formatWeekLabel,
+  PROGRAM_TIMEZONE_LABEL,
+  parseProgramDate,
+} from "@/lib/dates"
 import { type OneOnOneStatus, StatusBadge } from "@/lib/status"
 import { useCohortRoute } from "@/lib/use-cohort-route"
 
@@ -179,9 +184,8 @@ export default function MentorsPage() {
                   await createRound({
                     cohortId,
                     targetWeekLabel:
-                      weekLabel ||
-                      formatWeekLabel(new Date(weekStart).getTime()),
-                    targetWeekStart: new Date(weekStart).getTime(),
+                      weekLabel || formatWeekLabel(parseProgramDate(weekStart)),
+                    targetWeekStart: parseProgramDate(weekStart),
                   })
                   toast.success("Mentor round added.")
                   setWeekLabel("")
@@ -205,7 +209,9 @@ export default function MentorsPage() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="week-start">Week start</FieldLabel>
+                <FieldLabel htmlFor="week-start">
+                  Week start ({PROGRAM_TIMEZONE_LABEL})
+                </FieldLabel>
                 <Input
                   id="week-start"
                   type="date"

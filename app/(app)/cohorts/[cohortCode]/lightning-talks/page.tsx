@@ -43,7 +43,12 @@ import {
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
-import { formatDate } from "@/lib/dates"
+import {
+  formatDate,
+  getProgramWeekday,
+  PROGRAM_TIMEZONE_LABEL,
+  parseProgramDate,
+} from "@/lib/dates"
 import type { Weekday } from "@/lib/programWeeks"
 import { useCohortRoute } from "@/lib/use-cohort-route"
 import { getWeekdayLabel, WEEKDAY_OPTIONS } from "@/lib/weekdays"
@@ -184,7 +189,7 @@ export default function LightningTalksPage() {
                 try {
                   await createSlot({
                     cohortId,
-                    slotDate: new Date(slotDate).getTime(),
+                    slotDate: parseProgramDate(slotDate),
                   })
                   toast.success("Lightning talk slot created.")
                   setSlotDate("")
@@ -198,7 +203,9 @@ export default function LightningTalksPage() {
               }}
             >
               <Field>
-                <FieldLabel htmlFor="slot-date">Slot date</FieldLabel>
+                <FieldLabel htmlFor="slot-date">
+                  Slot date ({PROGRAM_TIMEZONE_LABEL})
+                </FieldLabel>
                 <Input
                   id="slot-date"
                   type="date"
@@ -211,9 +218,7 @@ export default function LightningTalksPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setGenerateDayOfWeek(
-                  new Date(cohort.startDate).getDay() as Weekday,
-                )
+                setGenerateDayOfWeek(getProgramWeekday(cohort.cohort.startDate))
                 setGenerateDialogOpen(true)
               }}
             >

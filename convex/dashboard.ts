@@ -5,6 +5,7 @@ import { isFellowTargeted } from "./lib/actionItemsHelpers"
 import { getFellowForUser, getMentorForUser } from "./lib/auth"
 import { canManagePodAsLeader, parentHasChildPods } from "./lib/cohortScope"
 import { cohortQuery } from "./lib/customFunctions"
+import { formatProgramDateTime } from "./lib/dates"
 
 function hasSchedulingLink(url: string | undefined | null): boolean {
   return Boolean(url?.trim())
@@ -188,7 +189,9 @@ async function buildLeaderDashboard(
   ).length
 
   const leaderUser = await ctx.db.get("users", ctx.user._id)
-  const leaderMissingSchedulingLink = !hasSchedulingLink(leaderUser?.calendlyUrl)
+  const leaderMissingSchedulingLink = !hasSchedulingLink(
+    leaderUser?.calendlyUrl,
+  )
   const leaderMissingDiscord = !hasDiscordUsername(leaderUser?.discordUsername)
 
   const setupTasks: Array<{
@@ -629,12 +632,7 @@ async function buildFellowDashboard(
     if (completedCustomIds.has(item._id)) {
       continue
     }
-    const dueLabel = new Intl.DateTimeFormat(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(new Date(item.dueAt))
+    const dueLabel = formatProgramDateTime(item.dueAt)
     actionItems.push({
       id: `custom-${item._id}`,
       title: item.title,

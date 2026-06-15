@@ -1,4 +1,10 @@
+import { fromAbsolute, toCalendarDate, toZoned } from "@internationalized/date"
 import { v } from "convex/values"
+import {
+  getProgramWeekday,
+  isSameProgramCalendarDay,
+  PROGRAM_TIMEZONE,
+} from "./dates"
 
 export const MS_PER_DAY = 24 * 60 * 60 * 1000
 export const MS_PER_WEEK = 7 * MS_PER_DAY
@@ -39,7 +45,10 @@ export function getProgramWeeks(
       weekStart,
       weekLabel: `Week ${weekNumber}`,
     })
-    weekStart += MS_PER_WEEK
+    const nextStart = toCalendarDate(
+      fromAbsolute(weekStart, PROGRAM_TIMEZONE),
+    ).add({ days: 7 })
+    weekStart = toZoned(nextStart, PROGRAM_TIMEZONE).toDate().getTime()
     weekNumber += 1
   }
 
@@ -51,17 +60,13 @@ export function getSlotDateInProgramWeek(
   weekStart: number,
   dayOfWeek: Weekday,
 ): number {
-  const startDay = new Date(weekStart).getDay() as Weekday
+  const startCal = toCalendarDate(fromAbsolute(weekStart, PROGRAM_TIMEZONE))
+  const startDay = getProgramWeekday(weekStart)
   const offset = (dayOfWeek - startDay + 7) % 7
-  return weekStart + offset * MS_PER_DAY
+  const slotCal = startCal.add({ days: offset })
+  return toZoned(slotCal, PROGRAM_TIMEZONE).toDate().getTime()
 }
 
 export function isSameCalendarDay(a: number, b: number): boolean {
-  const da = new Date(a)
-  const db = new Date(b)
-  return (
-    da.getFullYear() === db.getFullYear() &&
-    da.getMonth() === db.getMonth() &&
-    da.getDate() === db.getDate()
-  )
+  return isSameProgramCalendarDay(a, b)
 }

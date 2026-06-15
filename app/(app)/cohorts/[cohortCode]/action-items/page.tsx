@@ -54,6 +54,7 @@ import type { Doc, Id } from "@/convex/_generated/dataModel"
 import {
   dateTimeLocalToTimestamp,
   formatDateTime,
+  PROGRAM_TIMEZONE_LABEL,
   toDateTimeLocalValue,
 } from "@/lib/dates"
 import { useCohortRoute } from "@/lib/use-cohort-route"
@@ -644,7 +645,9 @@ export default function ActionItemsPage() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="action-due">Due date & time</FieldLabel>
+                <FieldLabel htmlFor="action-due">
+                  Due date & time ({PROGRAM_TIMEZONE_LABEL})
+                </FieldLabel>
                 <Input
                   id="action-due"
                   type="datetime-local"

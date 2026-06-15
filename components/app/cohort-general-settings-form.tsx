@@ -23,7 +23,11 @@ import {
 } from "@/components/ui/select"
 import { api } from "@/convex/_generated/api"
 import type { Doc, Id } from "@/convex/_generated/dataModel"
-import { toDateInputValue, toTimestamp } from "@/lib/dates"
+import {
+  PROGRAM_TIMEZONE_LABEL,
+  toDateInputValue,
+  toTimestamp,
+} from "@/lib/dates"
 
 type CohortDoc = Doc<"cohorts">
 
@@ -171,7 +175,7 @@ export function CohortGeneralSettingsForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel htmlFor="cohort-settings-start-date">
-              Start date
+              Start date ({PROGRAM_TIMEZONE_LABEL})
             </FieldLabel>
             <Input
               id="cohort-settings-start-date"
@@ -181,7 +185,9 @@ export function CohortGeneralSettingsForm({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="cohort-settings-end-date">End date</FieldLabel>
+            <FieldLabel htmlFor="cohort-settings-end-date">
+              End date ({PROGRAM_TIMEZONE_LABEL})
+            </FieldLabel>
             <Input
               id="cohort-settings-end-date"
               type="date"

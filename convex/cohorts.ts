@@ -6,6 +6,8 @@ import {
   type CohortAccess,
   getFellowForUser,
   getMentorForUser,
+  requirePodSettingsManagement,
+  requireUmbrellaLeader,
 } from "./lib/auth"
 import {
   canManagePodAsLeader,
@@ -29,6 +31,8 @@ import {
   getPodLeaderMembership,
   userLeadsGroupUnderParent,
 } from "./lib/groups"
+import { assertNotImpersonating } from "./lib/impersonation"
+import { migrateProgramDatesForCohorts } from "./lib/migrateProgramDates"
 import { baseProgramCode } from "./lib/programCode"
 import {
   cohortStatusValidator,
@@ -328,6 +332,42 @@ export const updatePod = podSettingsMutation({
       endDate: args.endDate,
     })
     return null
+  },
+})
+
+const migrateProgramDatesResultValidator = v.object({
+  cohortsUpdated: v.number(),
+  demoDaysUpdated: v.number(),
+  lightningTalkSlotsUpdated: v.number(),
+  mentorMeetingRoundsUpdated: v.number(),
+  fieldsAlreadyNormalized: v.number(),
+})
+
+export const migrateProgramDatesToEastern = authedMutation({
+  args: { cohortId: v.id("cohorts") },
+  returns: migrateProgramDatesResultValidator,
+  handler: async (ctx, args) => {
+    await assertNotImpersonating(ctx, ctx.user._id)
+
+    const cohort = await ctx.db.get("cohorts", args.cohortId)
+    if (!cohort) {
+      throw new Error("Cohort not found")
+    }
+
+    let cohortIds: Id<"cohorts">[]
+    if (isUmbrellaCohort(cohort)) {
+      await requireUmbrellaLeader(ctx, args.cohortId, ctx.user._id)
+      const pods = await ctx.db
+        .query("cohorts")
+        .withIndex("by_parent", (q) => q.eq("parentCohortId", cohort._id))
+        .collect()
+      cohortIds = [cohort._id, ...pods.map((pod) => pod._id)]
+    } else {
+      await requirePodSettingsManagement(ctx, args.cohortId, ctx.user._id)
+      cohortIds = [cohort._id]
+    }
+
+    return await migrateProgramDatesForCohorts(ctx, cohortIds)
   },
 })
 

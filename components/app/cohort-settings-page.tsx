@@ -5,6 +5,7 @@ import { CopyIcon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
+import { CohortDateMigrationCard } from "@/components/app/cohort-date-migration-card"
 import { CohortGeneralSettingsForm } from "@/components/app/cohort-general-settings-form"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { PodSettingsEditDialog } from "@/components/app/pod-settings-edit-dialog"
@@ -169,6 +170,7 @@ export function CohortSettingsPage() {
               cohort={cohortData.cohort}
               variant="pod"
             />
+            <CohortDateMigrationCard cohortId={cohortId} scope="pod" />
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Directory</CardTitle>
@@ -214,6 +216,7 @@ export function CohortSettingsPage() {
             cohort={cohortData.cohort}
             variant="umbrella"
           />
+          <CohortDateMigrationCard cohortId={cohortId} scope="umbrella" />
 
           <Card>
             <CardHeader>

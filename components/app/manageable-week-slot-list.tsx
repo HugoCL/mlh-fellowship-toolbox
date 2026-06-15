@@ -39,7 +39,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { formatDate, formatWeekDateRange, toDateInputValue } from "@/lib/dates"
+import {
+  formatDate,
+  formatWeekDateRange,
+  PROGRAM_TIMEZONE_LABEL,
+  parseProgramDate,
+  toDateInputValue,
+} from "@/lib/dates"
 
 export type ManageableWeekSlot = {
   id: string
@@ -94,7 +100,7 @@ export function ManageableWeekSlotList({
     try {
       await onUpdate(editingSlot.id, {
         label: showLabelField ? editLabel : undefined,
-        date: new Date(editDate).getTime(),
+        date: parseProgramDate(editDate),
       })
       toast.success("Slot updated.")
       setEditingSlot(null)
@@ -122,7 +128,9 @@ export function ManageableWeekSlotList({
               <TableHeader>
                 <TableRow>
                   {showLabelField ? <TableHead>Week</TableHead> : null}
-                  <TableHead>{dateDisplay === "weekRange" ? "Dates" : "Date"}</TableHead>
+                  <TableHead>
+                    {dateDisplay === "weekRange" ? "Dates" : "Date"}
+                  </TableHead>
                   <TableHead className="w-24 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -130,7 +138,9 @@ export function ManageableWeekSlotList({
                 {slots.map((slot) => (
                   <TableRow key={slot.id}>
                     {showLabelField ? (
-                      <TableCell className="font-medium">{slot.label}</TableCell>
+                      <TableCell className="font-medium">
+                        {slot.label}
+                      </TableCell>
                     ) : null}
                     <TableCell>
                       {dateDisplay === "weekRange"
@@ -161,7 +171,9 @@ export function ManageableWeekSlotList({
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete this slot?</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                Delete this slot?
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
                                 {deleteDescription}
                               </AlertDialogDescription>
@@ -221,7 +233,9 @@ export function ManageableWeekSlotList({
             ) : null}
             <Field>
               <FieldLabel htmlFor="edit-slot-date">
-                {dateDisplay === "weekRange" ? "Week start" : "Date"}
+                {dateDisplay === "weekRange"
+                  ? `Week start (${PROGRAM_TIMEZONE_LABEL})`
+                  : `Date (${PROGRAM_TIMEZONE_LABEL})`}
               </FieldLabel>
               <Input
                 id="edit-slot-date"
@@ -256,7 +270,9 @@ export async function runGenerateAllWeeks(
   try {
     const result = await action()
     if (result.created === 0 && result.skipped === 0) {
-      toast.message(`No ${entityLabel} to generate. Check cohort dates in settings.`)
+      toast.message(
+        `No ${entityLabel} to generate. Check cohort dates in settings.`,
+      )
       return
     }
     const parts: string[] = []
@@ -273,7 +289,9 @@ export async function runGenerateAllWeeks(
     toast.success(parts.join(". "))
   } catch (error) {
     toast.error(
-      error instanceof Error ? error.message : `Failed to generate ${entityLabel}s.`,
+      error instanceof Error
+        ? error.message
+        : `Failed to generate ${entityLabel}s.`,
     )
   }
 }
