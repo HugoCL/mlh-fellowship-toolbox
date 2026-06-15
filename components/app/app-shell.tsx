@@ -66,7 +66,7 @@ function SidebarBrandHeader() {
       className={cn(
         "flex w-full min-w-0",
         collapsed
-          ? "flex-col items-center gap-2"
+          ? "flex-col items-center gap-3 pb-1"
           : "items-center justify-between gap-2",
       )}
     >
@@ -146,7 +146,7 @@ function SidebarNavGroup({
     <SidebarGroup
       className={cn(
         "p-0 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0",
-        variant === "default" && "pt-0.5",
+        variant === "default" && "pt-0.5 group-data-[collapsible=icon]:pt-0",
         variant === "admin" &&
           "mt-1 border-t border-sidebar-border/60 pt-3 group-data-[collapsible=icon]:mt-0.5 group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:pt-1",
       )}
@@ -427,7 +427,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar variant="inset" collapsible="icon">
-        <SidebarHeader className="gap-3 px-3 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
+        <SidebarHeader className="gap-3 px-3 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:pb-4">
           <SidebarBrandHeader />
           <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
             <CohortSwitcher
@@ -455,7 +455,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ) : null}
           </div>
         </SidebarHeader>
-        <SidebarContent className="flex flex-col gap-2 px-2 pt-1 pb-2 group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-0.5">
+        <SidebarContent className="flex flex-col gap-2 px-2 pt-1 pb-2 group-data-[collapsible=icon]:gap-1.5 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-3">
           <SidebarNavGroup
             label={hasCohortContext ? "Workspace" : undefined}
             items={workspaceNavItems}

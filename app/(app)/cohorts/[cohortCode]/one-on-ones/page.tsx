@@ -166,6 +166,7 @@ export default function OneOnOnesPage() {
         pairs={peerData.pairs}
         instances={leaderData.instances}
         records={leaderData.records}
+        podLeaderSchedulingLink={leaderData.podLeaderSchedulingLink}
         setPeerStatus={setPeerStatus}
         setLeaderStatus={setLeaderStatus}
       />
@@ -599,6 +600,7 @@ function FellowOneOnOnesView({
   pairs,
   instances,
   records,
+  podLeaderSchedulingLink,
   setPeerStatus,
   setLeaderStatus,
 }: {
@@ -607,6 +609,7 @@ function FellowOneOnOnesView({
   pairs: PeerPair[]
   instances: LeaderInstance[]
   records: LeaderRecord[]
+  podLeaderSchedulingLink: string | null
   setPeerStatus: (
     fellowAId: Id<"fellows">,
     fellowBId: Id<"fellows">,
@@ -727,13 +730,33 @@ function FellowOneOnOnesView({
           <StatusBadge status={status} />
           <span className="font-medium">{instance.title}</span>
         </div>
-        {myFellowId ? (
-          <StatusSelect
-            value={status}
-            ariaLabel={`Status for ${instance.title}`}
-            onChange={(next) => setLeaderStatus(myFellowId, instance._id, next)}
-          />
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {podLeaderSchedulingLink ? (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link
+                  href={podLeaderSchedulingLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Schedule ${instance.title} with your pod leader`}
+                />
+              }
+            >
+              Schedule
+              <ExternalLink aria-hidden="true" />
+            </Button>
+          ) : null}
+          {myFellowId ? (
+            <StatusSelect
+              value={status}
+              ariaLabel={`Status for ${instance.title}`}
+              onChange={(next) => setLeaderStatus(myFellowId, instance._id, next)}
+            />
+          ) : null}
+        </div>
       </div>
     )
   }

@@ -50,6 +50,7 @@ const cohortDetailsValidator = v.object({
   realRole: roleValidator,
   fellow: v.union(fellowValidator, v.null()),
   mentor: v.union(mentorValidator, v.null()),
+  calendlyUrl: v.union(v.string(), v.null()),
   hasChildPods: v.boolean(),
   canManagePod: v.boolean(),
   isUmbrellaViewer: v.boolean(),
@@ -115,12 +116,23 @@ async function buildCohortDetails(
     }
   }
 
+  let calendlyUrl: string | null = null
+  if (ctx.membership.role === "fellow" && fellow) {
+    calendlyUrl = fellow.calendlyUrl?.trim() || null
+  } else if (ctx.membership.role === "mentor" && mentor) {
+    calendlyUrl = mentor.calendlyUrl.trim() || null
+  } else if (ctx.membership.role === "podLeader") {
+    const user = await ctx.db.get("users", ctx.user._id)
+    calendlyUrl = user?.calendlyUrl?.trim() || null
+  }
+
   return {
     cohort,
     role: ctx.membership.role,
     realRole: ctx.realMembership?.role ?? ctx.membership.role,
     fellow,
     mentor,
+    calendlyUrl,
     hasChildPods,
     canManagePod,
     isUmbrellaViewer,

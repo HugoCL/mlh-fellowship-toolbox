@@ -36,6 +36,7 @@ export const userValidator = v.object({
   email: v.string(),
   name: v.string(),
   imageUrl: v.optional(v.string()),
+  calendlyUrl: v.optional(v.string()),
   createdAt: v.number(),
   isPlatformAdmin: v.optional(v.boolean()),
 })

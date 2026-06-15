@@ -77,7 +77,7 @@ export const getDirectory = cohortQuery({
           name: user.name,
           email: user.email,
           role: "podLeader",
-          calendlyUrl: null,
+          calendlyUrl: user.calendlyUrl?.trim() || null,
           imageUrl: user.imageUrl ?? null,
           joined: true,
           pendingInvite: false,

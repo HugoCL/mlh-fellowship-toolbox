@@ -13,7 +13,7 @@ import { hasSchedulingLink } from "@/lib/scheduling-link"
 
 type SchedulingLinkSetupProps = {
   cohortId: Id<"cohorts">
-  role: "fellow" | "mentor"
+  role: "podLeader" | "fellow" | "mentor"
   calendlyUrl?: string | null
   variant?: "default" | "action"
 }
@@ -26,6 +26,7 @@ export function SchedulingLinkSetup({
 }: SchedulingLinkSetupProps) {
   const updateFellowCalendly = useMutation(api.fellows.updateMyCalendly)
   const updateMentorCalendly = useMutation(api.mentors.updateMyCalendly)
+  const updateLeaderSchedulingLink = useMutation(api.users.updateMySchedulingLink)
   const [url, setUrl] = useState(calendlyUrl ?? "")
   const [isSaving, setIsSaving] = useState(false)
 
@@ -61,8 +62,10 @@ export function SchedulingLinkSetup({
           try {
             if (role === "fellow") {
               await updateFellowCalendly({ cohortId, calendlyUrl: trimmed })
-            } else {
+            } else if (role === "mentor") {
               await updateMentorCalendly({ cohortId, calendlyUrl: trimmed })
+            } else {
+              await updateLeaderSchedulingLink({ calendlyUrl: trimmed })
             }
             toast.success("Scheduling link saved.")
           } catch (error) {

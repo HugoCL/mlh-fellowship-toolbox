@@ -181,6 +181,9 @@ async function buildLeaderDashboard(
     (fellow) => !fellow.calendlyUrl?.trim(),
   ).length
 
+  const leaderUser = await ctx.db.get("users", ctx.user._id)
+  const leaderMissingSchedulingLink = !hasSchedulingLink(leaderUser?.calendlyUrl)
+
   const setupTasks: Array<{
     id: string
     title: string
@@ -195,6 +198,16 @@ async function buildLeaderDashboard(
       title: "Add fellows to the pod",
       description: "Invite or add fellows before running program activities.",
       href: `${basePath}/directory`,
+      priority: "high",
+    })
+  }
+
+  if (leaderMissingSchedulingLink) {
+    setupTasks.push({
+      id: "leader-scheduling-link",
+      title: "Add your scheduling link",
+      description: "So fellows can book pod leader 1:1s with you.",
+      href: `${basePath}/directory?setup=scheduling`,
       priority: "high",
     })
   }

@@ -27,13 +27,35 @@ export const updateProfile = authedMutation({
   },
   returns: userValidator,
   handler: async (ctx, args) => {
-    const updates: { name?: string } = {}
+    const updates: { name?: string; calendlyUrl?: string } = {}
     if (args.name !== undefined) {
       updates.name = args.name
+    }
+    if (args.calendlyUrl !== undefined) {
+      updates.calendlyUrl = args.calendlyUrl.trim()
     }
     if (Object.keys(updates).length > 0) {
       await ctx.db.patch("users", ctx.user._id, updates)
     }
+    const user = await ctx.db.get("users", ctx.user._id)
+    if (!user) {
+      throw new Error("User not found")
+    }
+    return user
+  },
+})
+
+export const updateMySchedulingLink = authedMutation({
+  args: {
+    calendlyUrl: v.string(),
+  },
+  returns: userValidator,
+  handler: async (ctx, args) => {
+    const trimmed = args.calendlyUrl.trim()
+    if (!trimmed) {
+      throw new Error("Enter a scheduling link.")
+    }
+    await ctx.db.patch("users", ctx.user._id, { calendlyUrl: trimmed })
     const user = await ctx.db.get("users", ctx.user._id)
     if (!user) {
       throw new Error("User not found")

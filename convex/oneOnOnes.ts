@@ -191,6 +191,7 @@ export const listLeaderOneOnOnes = cohortQuery({
     fellows: v.array(fellowValidator),
     instances: v.array(instanceValidator),
     records: v.array(leaderOneOnOneValidator),
+    podLeaderSchedulingLink: v.union(v.string(), v.null()),
   }),
   handler: async (ctx, args) => {
     const fellows = await ctx.db
@@ -208,10 +209,26 @@ export const listLeaderOneOnOnes = cohortQuery({
       .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
       .collect()
 
+    const memberships = await ctx.db
+      .query("cohortMemberships")
+      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
+      .collect()
+
+    let podLeaderSchedulingLink: string | null = null
+    for (const membership of memberships) {
+      if (membership.role !== "podLeader") {
+        continue
+      }
+      const user = await ctx.db.get("users", membership.userId)
+      podLeaderSchedulingLink = user?.calendlyUrl?.trim() || null
+      break
+    }
+
     return {
       fellows,
       instances: instances.sort((a, b) => a.sortOrder - b.sortOrder),
       records,
+      podLeaderSchedulingLink,
     }
   },
 })

@@ -86,11 +86,7 @@ export default function DirectoryPage() {
   const canInvite = directory?.canInvite === true && !isImpersonating
 
   const needsOwnSchedulingLink =
-    cohortData &&
-    ((cohortData.role === "fellow" &&
-      !hasSchedulingLink(cohortData.fellow?.calendlyUrl)) ||
-      (cohortData.role === "mentor" &&
-        !hasSchedulingLink(cohortData.mentor?.calendlyUrl)))
+    cohortData && !hasSchedulingLink(cohortData.calendlyUrl)
 
   function resetInviteForm() {
     setInviteRole("fellow")
@@ -151,8 +147,7 @@ export default function DirectoryPage() {
       />
       <PageBody>
         <div className="flex w-full flex-col gap-8">
-          {needsOwnSchedulingLink &&
-          (cohortData.role === "fellow" || cohortData.role === "mentor") ? (
+          {needsOwnSchedulingLink ? (
             <section className="flex max-w-xl flex-col gap-3">
               <div>
                 <h2 className="font-heading text-lg font-semibold">
@@ -165,18 +160,10 @@ export default function DirectoryPage() {
                 </p>
               </div>
               <SchedulingLinkSetup
-                key={
-                  cohortData.role === "fellow"
-                    ? cohortData.fellow?.calendlyUrl
-                    : cohortData.mentor?.calendlyUrl
-                }
+                key={cohortData.calendlyUrl}
                 cohortId={cohortId}
                 role={cohortData.role}
-                calendlyUrl={
-                  cohortData.role === "fellow"
-                    ? cohortData.fellow?.calendlyUrl
-                    : cohortData.mentor?.calendlyUrl
-                }
+                calendlyUrl={cohortData.calendlyUrl}
                 variant="action"
               />
             </section>
@@ -406,7 +393,6 @@ function DirectoryGrid({ people }: { people: Array<DirectoryPerson> }) {
 }
 
 function DirectoryCard({ person }: { person: DirectoryPerson }) {
-  const showCalendly = person.role !== "podLeader"
   return (
     <Card className="gap-0 p-5 transition-shadow hover:ring-foreground/20 hover:shadow-sm">
       <div className="flex items-start gap-4">
@@ -457,23 +443,21 @@ function DirectoryCard({ person }: { person: DirectoryPerson }) {
             <span>No email</span>
           )}
         </div>
-        {showCalendly ? (
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="size-3.5 shrink-0" />
-            {person.calendlyUrl ? (
-              <a
-                href={person.calendlyUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-foreground underline-offset-4 hover:underline"
-              >
-                Open scheduling link
-              </a>
-            ) : (
-              <span>Scheduling link not set</span>
-            )}
-          </div>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <CalendarIcon className="size-3.5 shrink-0" />
+          {person.calendlyUrl ? (
+            <a
+              href={person.calendlyUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline-offset-4 hover:underline"
+            >
+              Open scheduling link
+            </a>
+          ) : (
+            <span>Scheduling link not set</span>
+          )}
+        </div>
       </div>
     </Card>
   )
