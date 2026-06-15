@@ -1,5 +1,5 @@
 import { v } from "convex/values"
-import { generatePeerPairs } from "./lib/assignments"
+import { generatePeerPairs as buildPeerPairs } from "./lib/assignments"
 import {
   canonicalPair,
   getFellowForUser,
@@ -94,7 +94,7 @@ export const createInstance = podManagementMutation({
   },
 })
 
-export const generatePeerMatrix = podManagementMutation({
+export const generatePeerPairs = podManagementMutation({
   args: { cohortId: v.id("cohorts") },
   returns: v.number(),
   handler: async (ctx, args) => {
@@ -112,7 +112,7 @@ export const generatePeerMatrix = podManagementMutation({
       existing.map((item) => `${item.fellowAId}:${item.fellowBId}`),
     )
 
-    const pairs = generatePeerPairs(fellows.map((fellow) => fellow._id))
+    const pairs = buildPeerPairs(fellows.map((fellow) => fellow._id))
     let created = 0
 
     for (const [fellowAId, fellowBId] of pairs) {
@@ -131,32 +131,51 @@ export const generatePeerMatrix = podManagementMutation({
       created += 1
     }
 
+    return created
+  },
+})
+
+export const generateLeaderRecords = podManagementMutation({
+  args: { cohortId: v.id("cohorts") },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const fellows = await ctx.db
+      .query("fellows")
+      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
+      .collect()
+
     const instances = await ctx.db
       .query("oneOnOneInstances")
       .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
       .collect()
 
+    const existingLeader = await ctx.db
+      .query("leaderOneOnOnes")
+      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
+      .collect()
+
+    const existingKeys = new Set(
+      existingLeader.map(
+        (item) => `${item.fellowId}:${item.instanceId}`,
+      ),
+    )
+
+    let created = 0
     for (const fellow of fellows) {
       for (const instance of instances) {
-        const existingLeader = await ctx.db
-          .query("leaderOneOnOnes")
-          .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
-          .collect()
-
-        const alreadyExists = existingLeader.some(
-          (item) =>
-            item.fellowId === fellow._id && item.instanceId === instance._id,
-        )
-
-        if (!alreadyExists) {
-          await ctx.db.insert("leaderOneOnOnes", {
-            cohortId: args.cohortId,
-            fellowId: fellow._id,
-            instanceId: instance._id,
-            status: "notStarted",
-            updatedAt: Date.now(),
-          })
+        const key = `${fellow._id}:${instance._id}`
+        if (existingKeys.has(key)) {
+          continue
         }
+
+        await ctx.db.insert("leaderOneOnOnes", {
+          cohortId: args.cohortId,
+          fellowId: fellow._id,
+          instanceId: instance._id,
+          status: "notStarted",
+          updatedAt: Date.now(),
+        })
+        created += 1
       }
     }
 

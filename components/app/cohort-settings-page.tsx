@@ -71,7 +71,6 @@ export function CohortSettingsPage() {
 
   const addPodLeader = useMutation(api.cohorts.addPodLeaderByEmail)
   const createPod = useMutation(api.cohorts.createPod)
-  const generatePeerMatrix = useMutation(api.oneOnOnes.generatePeerMatrix)
 
   const [leaderEmail, setLeaderEmail] = useState("")
   const [selectedPodId, setSelectedPodId] = useState<Id<"cohorts"> | "">("")
@@ -162,26 +161,6 @@ export function CohortSettingsPage() {
         <PageHeader
           title="Pod Settings"
           description={`Program setup for ${cohortData.cohort.programCode}.`}
-          actions={
-            cohortData.canManagePod ? (
-              <Button
-                onClick={async () => {
-                  try {
-                    const created = await generatePeerMatrix({ cohortId })
-                    toast.success(`Generated ${created} peer 1:1 pairs.`)
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error
-                        ? error.message
-                        : "Failed to generate matrix.",
-                    )
-                  }
-                }}
-              >
-                Generate Peer Matrix
-              </Button>
-            ) : undefined
-          }
         />
         <PageBody>
           <div className="flex max-w-2xl flex-col gap-6">

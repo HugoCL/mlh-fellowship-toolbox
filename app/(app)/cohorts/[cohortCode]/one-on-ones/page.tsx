@@ -59,6 +59,8 @@ export default function OneOnOnesPage() {
   const updatePeerStatus = useMutation(api.oneOnOnes.updatePeerStatus)
   const updateLeaderStatus = useMutation(api.oneOnOnes.updateLeaderStatus)
   const createInstance = useMutation(api.oneOnOnes.createInstance)
+  const generatePeerPairs = useMutation(api.oneOnOnes.generatePeerPairs)
+  const generateLeaderRecords = useMutation(api.oneOnOnes.generateLeaderRecords)
   const [instanceTitle, setInstanceTitle] = useState("")
 
   const fellows = peerData?.fellows ?? []
@@ -225,6 +227,27 @@ export default function OneOnOnesPage() {
                   Each pair shares one status. Find your pairs in your row;
                   editable cells show a dropdown.
                 </CardDescription>
+                {isLeader ? (
+                  <CardAction>
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          const created = await generatePeerPairs({ cohortId })
+                          toast.success(`Generated ${created} peer 1:1 pairs.`)
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Failed to generate peer pairs.",
+                          )
+                        }
+                      }}
+                    >
+                      Generate Peer Pairs
+                    </Button>
+                  </CardAction>
+                ) : null}
               </CardHeader>
               <CardContent className="px-0">
                 <div className="overflow-auto border-t border-border/60">
@@ -354,40 +377,63 @@ export default function OneOnOnesPage() {
                 </CardDescription>
                 {isLeader ? (
                   <CardAction>
-                    <form
-                      className="flex flex-wrap items-end gap-2"
-                      onSubmit={async (event) => {
-                        event.preventDefault()
-                        try {
-                          await createInstance({
-                            cohortId,
-                            title: instanceTitle,
-                          })
-                          toast.success("Leader 1:1 round created.")
-                          setInstanceTitle("")
-                        } catch (error) {
-                          toast.error(
-                            error instanceof Error
-                              ? error.message
-                              : "Failed to create round.",
-                          )
-                        }
-                      }}
-                    >
-                      <Field>
-                        <FieldLabel htmlFor="instance-title">
-                          New leader round
-                        </FieldLabel>
-                        <Input
-                          id="instance-title"
-                          className="w-48"
-                          value={instanceTitle}
-                          onChange={(e) => setInstanceTitle(e.target.value)}
-                          placeholder="Mid-program check-in…"
-                        />
-                      </Field>
-                      <Button type="submit">Add Round</Button>
-                    </form>
+                    <div className="flex flex-wrap items-end gap-2">
+                      <form
+                        className="flex flex-wrap items-end gap-2"
+                        onSubmit={async (event) => {
+                          event.preventDefault()
+                          try {
+                            await createInstance({
+                              cohortId,
+                              title: instanceTitle,
+                            })
+                            toast.success("Leader 1:1 round created.")
+                            setInstanceTitle("")
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to create round.",
+                            )
+                          }
+                        }}
+                      >
+                        <Field>
+                          <FieldLabel htmlFor="instance-title">
+                            New leader round
+                          </FieldLabel>
+                          <Input
+                            id="instance-title"
+                            className="w-48"
+                            value={instanceTitle}
+                            onChange={(e) => setInstanceTitle(e.target.value)}
+                            placeholder="Mid-program check-in…"
+                          />
+                        </Field>
+                        <Button type="submit">Add Round</Button>
+                      </form>
+                      <Button
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const created = await generateLeaderRecords({
+                              cohortId,
+                            })
+                            toast.success(
+                              `Generated ${created} pod leader 1:1 records.`,
+                            )
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to generate leader records.",
+                            )
+                          }
+                        }}
+                      >
+                        Generate Leader Records
+                      </Button>
+                    </div>
                   </CardAction>
                 ) : null}
               </CardHeader>
