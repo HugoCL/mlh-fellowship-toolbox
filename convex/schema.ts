@@ -14,6 +14,8 @@ export default defineSchema({
     name: v.string(),
     imageUrl: v.optional(v.string()),
     createdAt: v.number(),
+    /** First bootstrap user (WordPress-style); can create cohorts before any exist. */
+    isPlatformAdmin: v.optional(v.boolean()),
   })
     .index("by_token", ["tokenIdentifier"])
     .index("by_email", ["email"]),
@@ -70,7 +72,8 @@ export default defineSchema({
   })
     .index("by_token", ["token"])
     .index("by_cohort", ["cohortId"])
-    .index("by_cohort_and_email", ["cohortId", "email"]),
+    .index("by_cohort_and_email", ["cohortId", "email"])
+    .index("by_email", ["email"]),
 
   oneOnOneInstances: defineTable({
     cohortId: v.id("cohorts"),

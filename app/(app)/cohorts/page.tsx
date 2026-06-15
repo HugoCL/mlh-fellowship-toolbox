@@ -29,6 +29,7 @@ import { formatDate } from "@/lib/dates"
 
 export default function CohortsPage() {
   const cohorts = useQuery(api.cohorts.listMyCohorts, {})
+  const profile = useQuery(api.users.getCurrentUserProfile, {})
   const createCohort = useMutation(api.cohorts.createCohort)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [name, setName] = useState("")
@@ -38,7 +39,9 @@ export default function CohortsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const canCreateCohort =
-    cohorts === undefined || isUmbrellaAdmin(cohorts) || cohorts.length === 0
+    profile !== undefined &&
+    cohorts !== undefined &&
+    (profile.isPlatformAdmin === true || isUmbrellaAdmin(cohorts))
   const podOnlyLeader = cohorts ? isPodOnlyLeader(cohorts) : false
 
   function resetForm() {

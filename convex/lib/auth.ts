@@ -1,6 +1,14 @@
 import type { Doc, Id } from "../_generated/dataModel"
 import type { MutationCtx, QueryCtx } from "../_generated/server"
 import {
+  assertExistingUserAppAccess,
+  canBootstrapFirstUser,
+  canCreateUserAccount,
+  ensurePlatformBootstrapAdmin,
+  normalizeEmail,
+  notInvitedError,
+} from "./appAccess"
+import {
   canManagePodAsLeader,
   isUmbrellaCohort,
   parentHasChildPods,
@@ -26,11 +34,18 @@ export async function getCurrentUser(ctx: Ctx): Promise<Doc<"users">> {
     throw new Error("User not found. Complete onboarding first.")
   }
 
+  await assertExistingUserAppAccess(ctx, user)
+
   return user
+}
+
+export type GetOrCreateUserOptions = {
+  inviteToken?: string
 }
 
 export async function getOrCreateCurrentUser(
   ctx: MutationCtx,
+  options: GetOrCreateUserOptions = {},
 ): Promise<Doc<"users">> {
   const identity = await ctx.auth.getUserIdentity()
   if (!identity) {
@@ -45,15 +60,23 @@ export async function getOrCreateCurrentUser(
     .unique()
 
   if (existing) {
-    return existing
+    await assertExistingUserAppAccess(ctx, existing)
+    return await ensurePlatformBootstrapAdmin(ctx, existing)
   }
 
-  const email = identity.email ?? "unknown@example.com"
+  const email = normalizeEmail(identity.email ?? "unknown@example.com")
   const name =
     identity.name ??
     identity.nickname ??
     email.split("@")[0] ??
     "Fellowship User"
+
+  const canCreate = await canCreateUserAccount(ctx, email, options.inviteToken)
+  if (!canCreate) {
+    throw notInvitedError()
+  }
+
+  const isFirstUser = await canBootstrapFirstUser(ctx)
 
   const userId = await ctx.db.insert("users", {
     tokenIdentifier: identity.tokenIdentifier,
@@ -61,6 +84,7 @@ export async function getOrCreateCurrentUser(
     name,
     imageUrl: identity.pictureUrl,
     createdAt: Date.now(),
+    isPlatformAdmin: isFirstUser ? true : undefined,
   })
 
   const user = await ctx.db.get("users", userId)

@@ -1,5 +1,6 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
+import { normalizeEmail } from "./lib/appAccess"
 import { getCurrentUser, getOrCreateCurrentUser } from "./lib/auth"
 import { umbrellaLeaderQuery } from "./lib/customFunctions"
 import { acceptInviteForUser } from "./lib/inviteAcceptance"
@@ -60,8 +61,12 @@ export const getInviteByToken = query({
         .unique()
       if (user) {
         userEmail = user.email
-        emailMatchesUser =
-          user.email.trim().toLowerCase() === invite.email.trim().toLowerCase()
+      } else if (identity.email) {
+        userEmail = normalizeEmail(identity.email)
+      }
+
+      if (userEmail) {
+        emailMatchesUser = userEmail === normalizeEmail(invite.email)
       }
     }
 
@@ -86,7 +91,7 @@ export const acceptInviteByToken = mutation({
     redirectPath: v.string(),
   }),
   handler: async (ctx, args) => {
-    const user = await getOrCreateCurrentUser(ctx)
+    const user = await getOrCreateCurrentUser(ctx, { inviteToken: args.token })
 
     const invite = await ctx.db
       .query("invites")

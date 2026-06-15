@@ -195,10 +195,10 @@ export const createCohort = authedMutation({
       }
     }
 
-    if (memberships.length > 0 && !hasUmbrellaLeadership) {
-      throw new Error(
-        "Only umbrella cohort administrators can create new cohorts.",
-      )
+    const isPlatformAdmin = ctx.user.isPlatformAdmin === true
+
+    if (!isPlatformAdmin && !hasUmbrellaLeadership) {
+      throw new Error("Only platform administrators can create new cohorts.")
     }
 
     const normalizedProgramCode = baseProgramCode(args.programCode.trim())

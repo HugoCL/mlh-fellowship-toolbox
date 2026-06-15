@@ -17,6 +17,7 @@ import type * as fellows from "../fellows.js";
 import type * as impersonation from "../impersonation.js";
 import type * as invites from "../invites.js";
 import type * as lib_actionItemsHelpers from "../lib/actionItemsHelpers.js";
+import type * as lib_appAccess from "../lib/appAccess.js";
 import type * as lib_assignments from "../lib/assignments.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_cohortScope from "../lib/cohortScope.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   impersonation: typeof impersonation;
   invites: typeof invites;
   "lib/actionItemsHelpers": typeof lib_actionItemsHelpers;
+  "lib/appAccess": typeof lib_appAccess;
   "lib/assignments": typeof lib_assignments;
   "lib/auth": typeof lib_auth;
   "lib/cohortScope": typeof lib_cohortScope;
