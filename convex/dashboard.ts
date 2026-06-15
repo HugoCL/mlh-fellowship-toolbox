@@ -10,6 +10,10 @@ function hasSchedulingLink(url: string | undefined | null): boolean {
   return Boolean(url?.trim())
 }
 
+function hasDiscordUsername(username: string | undefined | null): boolean {
+  return Boolean(username?.trim())
+}
+
 function podBasePath(programCode: string): string {
   const slug = programCode.replace(/\./g, "-")
   return `/cohorts/${slug}`
@@ -58,6 +62,7 @@ const fellowActionItemValidator = v.object({
 const fellowDashboardValidator = v.object({
   view: v.literal("fellow"),
   needsCalendly: v.boolean(),
+  needsDiscord: v.boolean(),
   actionItems: v.array(fellowActionItemValidator),
   completedCount: v.number(),
   totalCount: v.number(),
@@ -74,6 +79,7 @@ const mentorAssignmentItemValidator = v.object({
 const mentorDashboardValidator = v.object({
   view: v.literal("mentor"),
   needsCalendly: v.boolean(),
+  needsDiscord: v.boolean(),
   pendingCount: v.number(),
   assignments: v.array(mentorAssignmentItemValidator),
 })
@@ -183,6 +189,7 @@ async function buildLeaderDashboard(
 
   const leaderUser = await ctx.db.get("users", ctx.user._id)
   const leaderMissingSchedulingLink = !hasSchedulingLink(leaderUser?.calendlyUrl)
+  const leaderMissingDiscord = !hasDiscordUsername(leaderUser?.discordUsername)
 
   const setupTasks: Array<{
     id: string
@@ -208,6 +215,16 @@ async function buildLeaderDashboard(
       title: "Add your scheduling link",
       description: "So fellows can book pod leader 1:1s with you.",
       href: `${basePath}/directory?setup=scheduling`,
+      priority: "high",
+    })
+  }
+
+  if (leaderMissingDiscord) {
+    setupTasks.push({
+      id: "leader-discord-username",
+      title: "Add your Discord username",
+      description: "So podmates can find you in the fellowship Discord.",
+      href: `${basePath}/directory`,
       priority: "high",
     })
   }
@@ -411,12 +428,15 @@ async function buildFellowDashboard(
   basePath: string,
 ) {
   const fellow = await getFellowForUser(ctx, cohortId, ctx.user._id)
+  const user = await ctx.db.get("users", ctx.user._id)
   const needsCalendly = fellow ? !hasSchedulingLink(fellow.calendlyUrl) : false
+  const needsDiscord = !hasDiscordUsername(user?.discordUsername)
 
   if (!fellow) {
     return {
       view: "fellow" as const,
       needsCalendly: false,
+      needsDiscord: false,
       actionItems: [],
       completedCount: 0,
       totalCount: 0,
@@ -493,6 +513,16 @@ async function buildFellowDashboard(
       title: "Add your scheduling link",
       subtitle: "So podmates can book peer 1:1s with you.",
       href: `${basePath}/directory?setup=scheduling`,
+      status: "todo",
+    })
+  }
+
+  if (needsDiscord) {
+    actionItems.push({
+      id: "discord",
+      title: "Add your Discord username",
+      subtitle: "So podmates can find you in the fellowship Discord.",
+      href: `${basePath}/directory`,
       status: "todo",
     })
   }
@@ -664,6 +694,7 @@ async function buildFellowDashboard(
   return {
     view: "fellow" as const,
     needsCalendly,
+    needsDiscord,
     actionItems,
     completedCount,
     totalCount,
@@ -675,12 +706,15 @@ async function buildMentorDashboard(
   cohortId: Id<"cohorts">,
 ) {
   const mentor = await getMentorForUser(ctx, cohortId, ctx.user._id)
+  const user = await ctx.db.get("users", ctx.user._id)
   const needsCalendly = mentor ? !hasSchedulingLink(mentor.calendlyUrl) : false
+  const needsDiscord = !hasDiscordUsername(user?.discordUsername)
 
   if (!mentor) {
     return {
       view: "mentor" as const,
       needsCalendly: false,
+      needsDiscord: false,
       pendingCount: 0,
       assignments: [],
     }
@@ -718,6 +752,7 @@ async function buildMentorDashboard(
   return {
     view: "mentor" as const,
     needsCalendly,
+    needsDiscord,
     pendingCount,
     assignments: myAssignments.map((assignment) => ({
       id: assignment._id,

@@ -7,6 +7,7 @@ import {
   ClockIcon,
 } from "lucide-react"
 import Link from "next/link"
+import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -32,7 +33,9 @@ type FellowDashboardPanelProps = {
   cohortId: Id<"cohorts">
   programCode: string
   needsCalendly: boolean
+  needsDiscord: boolean
   calendlyUrl?: string
+  discordUsername?: string | null
   actionItems: FellowActionItem[]
   completedCount: number
   totalCount: number
@@ -64,7 +67,9 @@ export function FellowDashboardPanel({
   cohortId,
   programCode,
   needsCalendly,
+  needsDiscord,
   calendlyUrl,
+  discordUsername,
   actionItems,
   completedCount,
   totalCount,
@@ -111,6 +116,14 @@ export function FellowDashboardPanel({
           cohortId={cohortId}
           role="fellow"
           calendlyUrl={calendlyUrl}
+          variant="action"
+        />
+      ) : null}
+
+      {needsDiscord ? (
+        <DiscordUsernameSetup
+          key={discordUsername}
+          discordUsername={discordUsername}
           variant="action"
         />
       ) : null}

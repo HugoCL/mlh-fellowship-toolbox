@@ -37,6 +37,7 @@ export const userValidator = v.object({
   name: v.string(),
   imageUrl: v.optional(v.string()),
   calendlyUrl: v.optional(v.string()),
+  discordUsername: v.optional(v.string()),
   createdAt: v.number(),
   isPlatformAdmin: v.optional(v.boolean()),
 })

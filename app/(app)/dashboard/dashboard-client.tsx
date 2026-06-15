@@ -211,7 +211,9 @@ export default function DashboardPageClient() {
             cohortId={viewingPodId!}
             programCode={viewingPodProgramCode}
             needsCalendly={insights.needsCalendly}
+            needsDiscord={insights.needsDiscord}
             calendlyUrl={effectiveCohortDetails?.fellow?.calendlyUrl}
+            discordUsername={effectiveCohortDetails?.discordUsername}
             actionItems={insights.actionItems}
             completedCount={insights.completedCount}
             totalCount={insights.totalCount}
@@ -221,7 +223,9 @@ export default function DashboardPageClient() {
             cohortId={viewingPodId!}
             programCode={viewingPodProgramCode}
             needsCalendly={insights.needsCalendly}
+            needsDiscord={insights.needsDiscord}
             calendlyUrl={effectiveCohortDetails?.mentor?.calendlyUrl}
+            discordUsername={effectiveCohortDetails?.discordUsername}
             pendingCount={insights.pendingCount}
             assignments={insights.assignments}
           />

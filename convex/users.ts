@@ -4,6 +4,14 @@ import { getOrCreateCurrentUser } from "./lib/auth"
 import { authedMutation, authedQuery } from "./lib/customFunctions"
 import { userValidator } from "./lib/validators"
 
+function normalizeDiscordUsername(input: string): string {
+  const trimmed = input.trim().replace(/^@+/, "")
+  if (!trimmed) {
+    throw new Error("Enter a Discord username.")
+  }
+  return trimmed
+}
+
 export const ensureCurrentUser = mutation({
   args: {},
   returns: userValidator,
@@ -24,19 +32,43 @@ export const updateProfile = authedMutation({
   args: {
     name: v.optional(v.string()),
     calendlyUrl: v.optional(v.string()),
+    discordUsername: v.optional(v.string()),
   },
   returns: userValidator,
   handler: async (ctx, args) => {
-    const updates: { name?: string; calendlyUrl?: string } = {}
+    const updates: {
+      name?: string
+      calendlyUrl?: string
+      discordUsername?: string
+    } = {}
     if (args.name !== undefined) {
       updates.name = args.name
     }
     if (args.calendlyUrl !== undefined) {
       updates.calendlyUrl = args.calendlyUrl.trim()
     }
+    if (args.discordUsername !== undefined) {
+      updates.discordUsername = normalizeDiscordUsername(args.discordUsername)
+    }
     if (Object.keys(updates).length > 0) {
       await ctx.db.patch("users", ctx.user._id, updates)
     }
+    const user = await ctx.db.get("users", ctx.user._id)
+    if (!user) {
+      throw new Error("User not found")
+    }
+    return user
+  },
+})
+
+export const updateMyDiscordUsername = authedMutation({
+  args: {
+    discordUsername: v.string(),
+  },
+  returns: userValidator,
+  handler: async (ctx, args) => {
+    const discordUsername = normalizeDiscordUsername(args.discordUsername)
+    await ctx.db.patch("users", ctx.user._id, { discordUsername })
     const user = await ctx.db.get("users", ctx.user._id)
     if (!user) {
       throw new Error("User not found")

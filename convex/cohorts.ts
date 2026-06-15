@@ -51,6 +51,7 @@ const cohortDetailsValidator = v.object({
   fellow: v.union(fellowValidator, v.null()),
   mentor: v.union(mentorValidator, v.null()),
   calendlyUrl: v.union(v.string(), v.null()),
+  discordUsername: v.union(v.string(), v.null()),
   hasChildPods: v.boolean(),
   canManagePod: v.boolean(),
   isUmbrellaViewer: v.boolean(),
@@ -126,6 +127,9 @@ async function buildCohortDetails(
     calendlyUrl = user?.calendlyUrl?.trim() || null
   }
 
+  const user = await ctx.db.get("users", ctx.user._id)
+  const discordUsername = user?.discordUsername?.trim() || null
+
   return {
     cohort,
     role: ctx.membership.role,
@@ -133,6 +137,7 @@ async function buildCohortDetails(
     fellow,
     mentor,
     calendlyUrl,
+    discordUsername,
     hasChildPods,
     canManagePod,
     isUmbrellaViewer,

@@ -2,6 +2,7 @@
 
 import { ArrowRightIcon, CheckCircle2Icon, CircleIcon } from "lucide-react"
 import Link from "next/link"
+import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -26,7 +27,9 @@ type MentorDashboardPanelProps = {
   cohortId: Id<"cohorts">
   programCode: string
   needsCalendly: boolean
+  needsDiscord: boolean
   calendlyUrl?: string
+  discordUsername?: string | null
   pendingCount: number
   assignments: MentorAssignmentItem[]
 }
@@ -35,7 +38,9 @@ export function MentorDashboardPanel({
   cohortId,
   programCode,
   needsCalendly,
+  needsDiscord,
   calendlyUrl,
+  discordUsername,
   pendingCount,
   assignments,
 }: MentorDashboardPanelProps) {
@@ -71,6 +76,14 @@ export function MentorDashboardPanel({
           cohortId={cohortId}
           role="mentor"
           calendlyUrl={calendlyUrl}
+          variant="action"
+        />
+      ) : null}
+
+      {needsDiscord ? (
+        <DiscordUsernameSetup
+          key={discordUsername}
+          discordUsername={discordUsername}
           variant="action"
         />
       ) : null}

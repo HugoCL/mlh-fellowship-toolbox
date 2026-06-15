@@ -1,11 +1,12 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import { CalendarIcon, CopyIcon, MailIcon, UserPlusIcon } from "lucide-react"
+import { CalendarIcon, CopyIcon, HashIcon, MailIcon, UserPlusIcon } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
+import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -34,6 +35,7 @@ import {
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { inviteUrl } from "@/lib/invite-url"
+import { formatDiscordUsername, hasDiscordUsername } from "@/lib/discord-username"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
 import { useActiveCohortContext } from "@/lib/use-active-cohort"
 import { useCohortRoute } from "@/lib/use-cohort-route"
@@ -87,6 +89,9 @@ export default function DirectoryPage() {
 
   const needsOwnSchedulingLink =
     cohortData && !hasSchedulingLink(cohortData.calendlyUrl)
+  const needsOwnDiscordUsername =
+    cohortData && !hasDiscordUsername(cohortData.discordUsername)
+  const needsProfileCompletion = needsOwnSchedulingLink || needsOwnDiscordUsername
 
   function resetInviteForm() {
     setInviteRole("fellow")
@@ -147,7 +152,7 @@ export default function DirectoryPage() {
       />
       <PageBody>
         <div className="flex w-full flex-col gap-8">
-          {needsOwnSchedulingLink ? (
+          {needsProfileCompletion ? (
             <section className="flex max-w-xl flex-col gap-3">
               <div>
                 <h2 className="font-heading text-lg font-semibold">
@@ -155,17 +160,28 @@ export default function DirectoryPage() {
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {setupScheduling
-                    ? "Welcome — add your scheduling link to finish onboarding."
-                    : "Add your scheduling link so others in the pod can book time with you."}
+                    ? "Welcome — finish onboarding so others in the pod can reach you."
+                    : "Add your contact details so others in the pod can find and book time with you."}
                 </p>
               </div>
-              <SchedulingLinkSetup
-                key={cohortData.calendlyUrl}
-                cohortId={cohortId}
-                role={cohortData.role}
-                calendlyUrl={cohortData.calendlyUrl}
-                variant="action"
-              />
+              <div className="flex flex-col gap-4">
+                {needsOwnSchedulingLink ? (
+                  <SchedulingLinkSetup
+                    key={cohortData.calendlyUrl}
+                    cohortId={cohortId}
+                    role={cohortData.role}
+                    calendlyUrl={cohortData.calendlyUrl}
+                    variant="action"
+                  />
+                ) : null}
+                {needsOwnDiscordUsername ? (
+                  <DiscordUsernameSetup
+                    key={cohortData.discordUsername}
+                    discordUsername={cohortData.discordUsername}
+                    variant="action"
+                  />
+                ) : null}
+              </div>
             </section>
           ) : null}
 
@@ -366,6 +382,7 @@ type DirectoryPerson = {
   email: string | null
   role: "podLeader" | "fellow" | "mentor"
   calendlyUrl: string | null
+  discordUsername: string | null
   imageUrl: string | null
   joined: boolean
   pendingInvite: boolean
@@ -441,6 +458,16 @@ function DirectoryCard({ person }: { person: DirectoryPerson }) {
             </a>
           ) : (
             <span>No email</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <HashIcon className="size-3.5 shrink-0" />
+          {person.discordUsername ? (
+            <span className="truncate text-foreground">
+              {formatDiscordUsername(person.discordUsername)}
+            </span>
+          ) : (
+            <span>Discord not set</span>
           )}
         </div>
         <div className="flex items-center gap-2">

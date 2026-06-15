@@ -14,6 +14,7 @@ export default defineSchema({
     name: v.string(),
     imageUrl: v.optional(v.string()),
     calendlyUrl: v.optional(v.string()),
+    discordUsername: v.optional(v.string()),
     createdAt: v.number(),
     /** First bootstrap user (WordPress-style); can create cohorts before any exist. */
     isPlatformAdmin: v.optional(v.boolean()),

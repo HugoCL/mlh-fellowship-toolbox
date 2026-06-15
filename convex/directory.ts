@@ -16,6 +16,7 @@ const directoryPersonValidator = v.object({
     v.literal("mentor"),
   ),
   calendlyUrl: v.union(v.string(), v.null()),
+  discordUsername: v.union(v.string(), v.null()),
   imageUrl: v.union(v.string(), v.null()),
   joined: v.boolean(),
   pendingInvite: v.boolean(),
@@ -56,6 +57,7 @@ export const getDirectory = cohortQuery({
       email: string | null
       role: "podLeader" | "fellow" | "mentor"
       calendlyUrl: string | null
+      discordUsername: string | null
       imageUrl: string | null
       joined: boolean
       pendingInvite: boolean
@@ -78,6 +80,7 @@ export const getDirectory = cohortQuery({
           email: user.email,
           role: "podLeader",
           calendlyUrl: user.calendlyUrl?.trim() || null,
+          discordUsername: user.discordUsername?.trim() || null,
           imageUrl: user.imageUrl ?? null,
           joined: true,
           pendingInvite: false,
@@ -100,6 +103,7 @@ export const getDirectory = cohortQuery({
         email: fellow.email,
         role: "fellow",
         calendlyUrl: fellow.calendlyUrl?.trim() || null,
+        discordUsername: fellowUser?.discordUsername?.trim() || null,
         imageUrl: fellowUser?.imageUrl ?? null,
         joined: Boolean(fellow.userId),
         pendingInvite: !fellow.userId,
@@ -121,6 +125,7 @@ export const getDirectory = cohortQuery({
         email: mentor.email ?? null,
         role: "mentor",
         calendlyUrl: mentor.calendlyUrl.trim() || null,
+        discordUsername: mentorUser?.discordUsername?.trim() || null,
         imageUrl: mentorUser?.imageUrl ?? null,
         joined: Boolean(mentor.userId),
         pendingInvite: !mentor.userId && Boolean(mentor.email),
