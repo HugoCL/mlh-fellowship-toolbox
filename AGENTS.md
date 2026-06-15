@@ -110,6 +110,7 @@ When adding shadcn components, use the **Base UI** registry/preset for this repo
 - People/Directory should use a card layout with Clerk avatars (initials fallback), not a table.
 - Use Biome for lint/format (`pnpm lint`); do not add ESLint to this project.
 - Exclude `components/ui` from Biome checks (generated shadcn wrappers).
+- Week-based scheduling (mentor rounds, lightning talks, demo days) should offer bulk "Generate All Weeks" from cohort dates while keeping manual add plus per-slot edit/delete.
 
 ## Learned Workspace Facts
 
@@ -121,3 +122,5 @@ When adding shadcn components, use the **Base UI** registry/preset for this repo
 - Impersonation ("View as fellow"): gate UI on effective fellow role, hide leader-only actions, and skip leader-only Convex queries (e.g. `listGroupsForParent`) while impersonating.
 - Feature pages (Mentors, Directory, etc.) use role-based views: simplified personal UI for fellows, full management UI for pod leaders and admins.
 - Dev seed: `pnpm seed:pod` runs `convex/seed.ts` to idempotently add fellows, mentors, 1:1 matrices, and mentor assignments to a pod.
+- App access is invite-gated: the first user becomes platform admin (`isPlatformAdmin`); later users need a pending invite or cohort membership or see the not-invited screen (`convex/lib/appAccess.ts`, `NotInvitedScreen`).
+- Program weeks are derived from cohort `startDate`/`endDate` via `getProgramWeeks` in `convex/lib/programWeeks.ts` (re-exported from `lib/programWeeks.ts` for tests).
