@@ -26,7 +26,9 @@ export function SchedulingLinkSetup({
 }: SchedulingLinkSetupProps) {
   const updateFellowCalendly = useMutation(api.fellows.updateMyCalendly)
   const updateMentorCalendly = useMutation(api.mentors.updateMyCalendly)
-  const updateLeaderSchedulingLink = useMutation(api.users.updateMySchedulingLink)
+  const updateLeaderSchedulingLink = useMutation(
+    api.users.updateMySchedulingLink,
+  )
   const [url, setUrl] = useState(calendlyUrl ?? "")
   const [isSaving, setIsSaving] = useState(false)
 

@@ -155,9 +155,7 @@ export const generateLeaderRecords = podManagementMutation({
       .collect()
 
     const existingKeys = new Set(
-      existingLeader.map(
-        (item) => `${item.fellowId}:${item.instanceId}`,
-      ),
+      existingLeader.map((item) => `${item.fellowId}:${item.instanceId}`),
     )
 
     let created = 0

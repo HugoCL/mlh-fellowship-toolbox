@@ -82,7 +82,11 @@ async function acceptPodLeaderInvite(
     return
   }
 
-  const groupCohortId = await createPodGroupForLeader(ctx, parentCohort, user._id)
+  const groupCohortId = await createPodGroupForLeader(
+    ctx,
+    parentCohort,
+    user._id,
+  )
 
   await ctx.db.patch("invites", invite._id, {
     status: "accepted",

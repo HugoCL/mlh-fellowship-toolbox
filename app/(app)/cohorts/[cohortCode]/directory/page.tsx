@@ -1,12 +1,18 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import { CalendarIcon, CopyIcon, HashIcon, MailIcon, UserPlusIcon } from "lucide-react"
+import {
+  CalendarIcon,
+  CopyIcon,
+  HashIcon,
+  MailIcon,
+  UserPlusIcon,
+} from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
-import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
+import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -34,8 +40,11 @@ import {
 } from "@/components/ui/select"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
+import {
+  formatDiscordUsername,
+  hasDiscordUsername,
+} from "@/lib/discord-username"
 import { inviteUrl } from "@/lib/invite-url"
-import { formatDiscordUsername, hasDiscordUsername } from "@/lib/discord-username"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
 import { useActiveCohortContext } from "@/lib/use-active-cohort"
 import { useCohortRoute } from "@/lib/use-cohort-route"
@@ -91,7 +100,8 @@ export default function DirectoryPage() {
     cohortData && !hasSchedulingLink(cohortData.calendlyUrl)
   const needsOwnDiscordUsername =
     cohortData && !hasDiscordUsername(cohortData.discordUsername)
-  const needsProfileCompletion = needsOwnSchedulingLink || needsOwnDiscordUsername
+  const needsProfileCompletion =
+    needsOwnSchedulingLink || needsOwnDiscordUsername
 
   function resetInviteForm() {
     setInviteRole("fellow")

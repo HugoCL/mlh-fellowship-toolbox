@@ -75,7 +75,10 @@ export function LeaderDashboardPanel({
               {fellowCount}
             </span>
           </div>
-          <div className="hidden h-4 w-px bg-border sm:block" aria-hidden="true" />
+          <div
+            className="hidden h-4 w-px bg-border sm:block"
+            aria-hidden="true"
+          />
           <div className="flex items-baseline gap-2">
             <span className="text-xs text-muted-foreground">Mentors</span>
             <span className="font-heading text-2xl font-semibold tabular-nums">
@@ -144,7 +147,9 @@ export function LeaderDashboardPanel({
                   <Card className="h-full transition-colors hover:bg-muted/20">
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-sm">{module.label}</CardTitle>
+                        <CardTitle className="text-sm">
+                          {module.label}
+                        </CardTitle>
                         <Badge
                           variant={
                             module.status === "complete"
@@ -218,8 +223,8 @@ export function LeaderDashboardPanel({
           <CardHeader>
             <CardTitle>Pod is set up</CardTitle>
             <CardDescription>
-              Add fellows and configure activities from the directory and feature
-              pages in the sidebar.
+              Add fellows and configure activities from the directory and
+              feature pages in the sidebar.
             </CardDescription>
           </CardHeader>
         </Card>

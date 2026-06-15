@@ -1,11 +1,11 @@
 import { v } from "convex/values"
-import { getProgramWeeks } from "./lib/programWeeks"
 import { getFellowForUser, requireFellowForUser } from "./lib/auth"
 import {
   cohortMutation,
   cohortQuery,
   podManagementMutation,
 } from "./lib/customFunctions"
+import { getProgramWeeks } from "./lib/programWeeks"
 import { fellowValidator } from "./lib/validators"
 
 const demoDayValidator = v.object({
@@ -105,7 +105,9 @@ export const generateAllDemoDays = podManagementMutation({
 
     const programWeeks = getProgramWeeks(cohort.startDate, cohort.endDate)
     if (programWeeks.length === 0) {
-      throw new Error("Set cohort start and end dates before generating demo days.")
+      throw new Error(
+        "Set cohort start and end dates before generating demo days.",
+      )
     }
 
     const fellows = (

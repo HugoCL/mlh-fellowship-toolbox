@@ -1,4 +1,6 @@
-export function hasDiscordUsername(username: string | undefined | null): boolean {
+export function hasDiscordUsername(
+  username: string | undefined | null,
+): boolean {
   return Boolean(username?.trim())
 }
 

@@ -799,7 +799,9 @@ function FellowOneOnOnesView({
             <StatusSelect
               value={status}
               ariaLabel={`Status for ${instance.title}`}
-              onChange={(next) => setLeaderStatus(myFellowId, instance._id, next)}
+              onChange={(next) =>
+                setLeaderStatus(myFellowId, instance._id, next)
+              }
             />
           ) : null}
         </div>
