@@ -14,6 +14,14 @@ import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -36,7 +44,9 @@ import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
 import { formatDate } from "@/lib/dates"
+import type { Weekday } from "@/lib/programWeeks"
 import { useCohortRoute } from "@/lib/use-cohort-route"
+import { getWeekdayLabel, WEEKDAY_OPTIONS } from "@/lib/weekdays"
 
 export default function LightningTalksPage() {
   const {
@@ -60,6 +70,9 @@ export default function LightningTalksPage() {
   )
 
   const [slotDate, setSlotDate] = useState("")
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false)
+  const [generateDayOfWeek, setGenerateDayOfWeek] = useState<Weekday>(0)
+  const [isGenerating, setIsGenerating] = useState(false)
   const [topic, setTopic] = useState("")
   const [selectedSlot, setSelectedSlot] = useState<string>("")
   const [assignFellowId, setAssignFellowId] = useState<string>("")
@@ -197,15 +210,88 @@ export default function LightningTalksPage() {
             </form>
             <Button
               variant="outline"
-              onClick={() =>
-                void runGenerateAllWeeks(
-                  () => generateAllSlots({ cohortId }),
-                  "talk slot",
+              onClick={() => {
+                setGenerateDayOfWeek(
+                  new Date(cohort.startDate).getDay() as Weekday,
                 )
-              }
+                setGenerateDialogOpen(true)
+              }}
             >
               Generate All Weeks
             </Button>
+            <Dialog
+              open={generateDialogOpen}
+              onOpenChange={setGenerateDialogOpen}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Generate talk slots</DialogTitle>
+                  <DialogDescription>
+                    Create one lightning talk slot per program week on the
+                    selected day.
+                  </DialogDescription>
+                </DialogHeader>
+                <Field>
+                  <FieldLabel htmlFor="generate-day-of-week">
+                    Day of week
+                  </FieldLabel>
+                  <Select
+                    value={String(generateDayOfWeek)}
+                    onValueChange={(value) => {
+                      if (value) {
+                        setGenerateDayOfWeek(Number(value) as Weekday)
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="generate-day-of-week" className="w-full">
+                      <SelectValue>
+                        {getWeekdayLabel(generateDayOfWeek)}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {WEEKDAY_OPTIONS.map((option) => (
+                          <SelectItem
+                            key={option.value}
+                            value={String(option.value)}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setGenerateDialogOpen(false)}
+                    disabled={isGenerating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={isGenerating}
+                    onClick={() => {
+                      setIsGenerating(true)
+                      void runGenerateAllWeeks(
+                        () =>
+                          generateAllSlots({
+                            cohortId,
+                            dayOfWeek: generateDayOfWeek,
+                          }),
+                        "talk slot",
+                      ).finally(() => {
+                        setIsGenerating(false)
+                        setGenerateDialogOpen(false)
+                      })
+                    }}
+                  >
+                    Generate
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </PageToolbar>
         ) : null}
 

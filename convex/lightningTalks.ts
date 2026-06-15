@@ -1,14 +1,16 @@
 import { v } from "convex/values"
-import {
-  getProgramWeeks,
-  isSameCalendarDay,
-} from "./lib/programWeeks"
 import { getFellowForUser, requireFellowForUser } from "./lib/auth"
 import {
   cohortMutation,
   cohortQuery,
   podManagementMutation,
 } from "./lib/customFunctions"
+import {
+  getProgramWeeks,
+  getSlotDateInProgramWeek,
+  isSameCalendarDay,
+  weekdayValidator,
+} from "./lib/programWeeks"
 import { fellowValidator } from "./lib/validators"
 
 const slotValidator = v.object({
@@ -81,7 +83,10 @@ export const createSlot = podManagementMutation({
 })
 
 export const generateAllSlots = podManagementMutation({
-  args: { cohortId: v.id("cohorts") },
+  args: {
+    cohortId: v.id("cohorts"),
+    dayOfWeek: weekdayValidator,
+  },
   returns: v.object({
     created: v.number(),
     skipped: v.number(),
@@ -103,8 +108,9 @@ export const generateAllSlots = podManagementMutation({
     const now = Date.now()
 
     for (const week of programWeeks) {
+      const slotDate = getSlotDateInProgramWeek(week.weekStart, args.dayOfWeek)
       const alreadyExists = existing.some((slot) =>
-        isSameCalendarDay(slot.slotDate, week.weekStart),
+        isSameCalendarDay(slot.slotDate, slotDate),
       )
       if (alreadyExists) {
         skipped += 1
@@ -113,7 +119,7 @@ export const generateAllSlots = podManagementMutation({
 
       const slotId = await ctx.db.insert("lightningTalkSlots", {
         cohortId: args.cohortId,
-        slotDate: week.weekStart,
+        slotDate,
         maxEnrollments: 1,
         createdAt: now,
       })
