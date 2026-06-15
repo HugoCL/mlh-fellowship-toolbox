@@ -31,49 +31,38 @@ export function parseProgramCodeForRoute(programCode: string): {
   return { umbrellaProgramCode: programCode, podNumber: null }
 }
 
+/** Build a workspace path from any program code (umbrella or pod). */
+export function cohortPath(programCode: string, segment?: string): string {
+  const base = `/cohorts/${programCodeToSlug(programCode)}`
+  return segment ? `${base}/${segment}` : base
+}
+
+/** @deprecated Use cohortPath — kept for call sites that split umbrella + pod number. */
 export function podPath(
   umbrellaProgramCode: string,
   podNumber: number,
   segment?: string,
 ): string {
-  const base = `/cohorts/${programCodeToSlug(umbrellaProgramCode)}/pods/${podNumber}`
-  return segment ? `${base}/${segment}` : base
+  return cohortPath(
+    buildGroupProgramCode(umbrellaProgramCode, podNumber),
+    segment,
+  )
 }
 
+/** @deprecated Use cohortPath — kept for umbrella-only paths. */
 export function umbrellaPath(
   umbrellaProgramCode: string,
   segment?: string,
 ): string {
-  const base = `/cohorts/${programCodeToSlug(umbrellaProgramCode)}`
-  return segment ? `${base}/${segment}` : base
-}
-
-/** Build a workspace path from any program code (umbrella or pod). */
-export function cohortPath(programCode: string, segment?: string): string {
-  const { umbrellaProgramCode, podNumber } =
-    parseProgramCodeForRoute(programCode)
-  if (podNumber !== null) {
-    return podPath(umbrellaProgramCode, podNumber, segment)
-  }
-  return umbrellaPath(umbrellaProgramCode, segment)
+  return cohortPath(umbrellaProgramCode, segment)
 }
 
 /** Resolve the cohort program code from a pathname (pod or umbrella). */
 export function getCohortCodeFromPath(pathname: string): string | null {
-  const podMatch = pathname.match(/^\/cohorts\/([^/]+)\/pods\/(\d+)/)
-  if (podMatch?.[1] && podMatch[2]) {
-    const umbrella = slugToProgramCode(decodeURIComponent(podMatch[1]))
-    return buildGroupProgramCode(
-      umbrella,
-      Number.parseInt(podMatch[2], 10),
-    )
+  const match = pathname.match(/^\/cohorts\/([^/]+)/)
+  if (match?.[1]) {
+    return slugToProgramCode(decodeURIComponent(match[1]))
   }
-
-  const umbrellaMatch = pathname.match(/^\/cohorts\/([^/]+)/)
-  if (umbrellaMatch?.[1]) {
-    return slugToProgramCode(decodeURIComponent(umbrellaMatch[1]))
-  }
-
   return null
 }
 
@@ -81,14 +70,16 @@ export function getPodRouteFromPath(pathname: string): {
   umbrellaProgramCode: string
   podNumber: number
 } | null {
-  const podMatch = pathname.match(/^\/cohorts\/([^/]+)\/pods\/(\d+)/)
-  if (!podMatch?.[1] || !podMatch[2]) {
+  const programCode = getCohortCodeFromPath(pathname)
+  if (!programCode || !hasGroupSuffix(programCode)) {
     return null
   }
-  return {
-    umbrellaProgramCode: slugToProgramCode(decodeURIComponent(podMatch[1])),
-    podNumber: Number.parseInt(podMatch[2], 10),
+  const { umbrellaProgramCode, podNumber } =
+    parseProgramCodeForRoute(programCode)
+  if (podNumber === null) {
+    return null
   }
+  return { umbrellaProgramCode, podNumber }
 }
 
 export const POD_FEATURE_SEGMENTS = [
@@ -100,33 +91,45 @@ export const POD_FEATURE_SEGMENTS = [
   "settings",
 ] as const
 
+export type PodFeatureSegment = (typeof POD_FEATURE_SEGMENTS)[number]
+
+function isPodFeatureSegment(segment: string): segment is PodFeatureSegment {
+  return (POD_FEATURE_SEGMENTS as readonly string[]).includes(segment)
+}
+
 export function isFeaturePagePath(pathname: string): boolean {
-  return new RegExp(
-    `^/cohorts/[^/]+/pods/\\d+/(${POD_FEATURE_SEGMENTS.join("|")})`,
-  ).test(pathname)
+  const segment = getFeatureSegmentFromPath(pathname)
+  return segment !== null && segment !== "settings"
 }
 
 export function getFeatureSegmentFromPath(pathname: string): string | null {
-  const match = pathname.match(/^\/cohorts\/[^/]+\/pods\/\d+\/([^/?]+)/)
-  return match?.[1] ?? null
+  const match = pathname.match(/^\/cohorts\/[^/]+\/([^/?]+)/)
+  const segment = match?.[1]
+  if (segment && isPodFeatureSegment(segment)) {
+    return segment
+  }
+  return null
 }
 
-/** Redirect legacy flat slug URLs (26-SUM-B-5-1/directory) to nested pod paths. */
+/** Redirect legacy nested pod URLs (/cohorts/{umbrella}/pods/{n}/…) to flat slugs. */
 export function legacyCohortPathRedirect(
   pathname: string,
   search: string,
 ): string | null {
-  const match = pathname.match(
-    /^\/cohorts\/([^/]+)\/(directory|one-on-ones|mentors|demo-days|lightning-talks|settings)$/,
+  const nestedMatch = pathname.match(
+    /^\/cohorts\/([^/]+)\/pods\/(\d+)(?:\/([^/?]+))?$/,
   )
-  if (!match?.[1] || !match[2]) {
-    return null
+  if (nestedMatch?.[1] && nestedMatch[2]) {
+    const umbrella = slugToProgramCode(decodeURIComponent(nestedMatch[1]))
+    const programCode = buildGroupProgramCode(
+      umbrella,
+      Number.parseInt(nestedMatch[2], 10),
+    )
+    const segment = nestedMatch[3]
+    return cohortPath(programCode, segment) + search
   }
-  const programCode = slugToProgramCode(decodeURIComponent(match[1]))
-  if (!hasGroupSuffix(programCode)) {
-    return null
-  }
-  return cohortPath(programCode, match[2]) + search
+
+  return null
 }
 
 /** Dashboard URL with optional umbrella + pod program codes in query params. */

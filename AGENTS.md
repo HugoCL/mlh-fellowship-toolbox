@@ -100,3 +100,24 @@ Pattern used in cohort feature pages (`lightning-talks`, `demo-days`, etc.).
 - Working examples: `components/app/app-shell.tsx`, `components/app/cohort-switcher.tsx`, `components/app/theme-selector.tsx`
 
 When adding shadcn components, use the **Base UI** registry/preset for this repo, not the default Radix one.
+
+## Learned User Preferences
+
+- Prefer short, plain page header subtitles; avoid permission-heavy explanatory copy.
+- User-facing scheduling copy should be vendor-neutral (e.g. "scheduling link"); the URL field and link behavior matter more than the provider name.
+- Dashboards should be role-aware: fellows see action items and personal next steps; pod leaders and admins see at-a-glance operational signals, not bare 0/0 stat grids.
+- Lightning Talks should list only fellows who have registered, not every pod fellow with empty placeholder rows.
+- People/Directory should use a card layout with Clerk avatars (initials fallback), not a table.
+- Use Biome for lint/format (`pnpm lint`); do not add ESLint to this project.
+- Exclude `components/ui` from Biome checks (generated shadcn wrappers).
+
+## Learned Workspace Facts
+
+- Stack: Next.js App Router, Convex backend, Clerk auth, Base UI shadcn (`base-mira` preset).
+- Program codes follow `YY.SEASON.LETTER(optional).POD`; URL slugs hyphenate dots (`/cohorts/26-SUM-B-5`), not nested `/pods/{n}/` paths. Helpers live in `lib/cohort-routes.ts` and `convex/lib/programCode.ts`.
+- Fellows, mentors, and pod roster data belong to pod cohorts (e.g. `26.SUM.B.5.1`), not umbrella cohort rows.
+- Base UI `DropdownMenuItem` handlers use `onClick`, not Radix-style `onSelect`.
+- Base UI `SelectValue` needs explicit label children (e.g. `getStatusLabel` from `lib/status.ts`); raw enum keys display verbatim otherwise.
+- Impersonation ("View as fellow"): gate UI on effective fellow role, hide leader-only actions, and skip leader-only Convex queries (e.g. `listGroupsForParent`) while impersonating.
+- Feature pages (Mentors, Directory, etc.) use role-based views: simplified personal UI for fellows, full management UI for pod leaders and admins.
+- Dev seed: `pnpm seed:pod` runs `convex/seed.ts` to idempotently add fellows, mentors, 1:1 matrices, and mentor assignments to a pod.

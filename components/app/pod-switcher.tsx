@@ -97,7 +97,7 @@ export function PodSwitcher({
           {groups.map((group) => (
             <DropdownMenuItem
               key={group.cohort._id}
-              onSelect={() => onSelectPod(group.cohort._id)}
+              onClick={() => onSelectPod(group.cohort._id)}
             >
               <div className="flex min-w-0 flex-col">
                 <span className="truncate font-medium">

@@ -8,16 +8,18 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   LayoutDashboardIcon,
+  type LucideIcon,
   MessagesSquareIcon,
-  MicIcon,
   PresentationIcon,
   SettingsIcon,
   UserRoundIcon,
   UsersIcon,
+  ZapIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { CohortSwitcher } from "@/components/app/cohort-switcher"
+import { ImpersonateFellowControl } from "@/components/app/impersonate-fellow-control"
 import { PodSwitcher } from "@/components/app/pod-switcher"
 import { SettingsMenu } from "@/components/app/settings-menu"
 import { Button } from "@/components/ui/button"
@@ -27,6 +29,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -36,7 +39,6 @@ import {
 } from "@/components/ui/sidebar"
 import { api } from "@/convex/_generated/api"
 import {
-  canManagePodWorkspace,
   canViewPodWorkspace,
   isCohortAdminOnUmbrella,
   isUmbrellaAdmin,
@@ -49,9 +51,10 @@ import {
   getPodRouteFromPath,
   myTasksPath,
 } from "@/lib/cohort-routes"
-import { cn } from "@/lib/utils"
 import { useActiveCohortContext } from "@/lib/use-active-cohort"
+import { useIsImpersonating } from "@/lib/use-impersonation"
 import { useWorkspacePod } from "@/lib/use-workspace-pod"
+import { cn } from "@/lib/utils"
 
 function SidebarBrandHeader() {
   const { state, toggleSidebar } = useSidebar()
@@ -61,7 +64,9 @@ function SidebarBrandHeader() {
     <div
       className={cn(
         "flex w-full min-w-0",
-        collapsed ? "flex-col items-center gap-2" : "items-center justify-between gap-2",
+        collapsed
+          ? "flex-col items-center gap-2"
+          : "items-center justify-between gap-2",
       )}
     >
       {collapsed ? (
@@ -112,6 +117,63 @@ function SidebarUserFooter({ name }: { name: string }) {
       <SettingsMenu />
       <UserButton />
     </div>
+  )
+}
+
+type SidebarNavItem = {
+  href: string
+  label: string
+  icon: LucideIcon
+}
+
+function SidebarNavGroup({
+  label,
+  items,
+  isNavActive,
+  variant = "default",
+}: {
+  label?: string
+  items: SidebarNavItem[]
+  isNavActive: (href: string) => boolean
+  variant?: "default" | "admin"
+}) {
+  if (items.length === 0) {
+    return null
+  }
+
+  return (
+    <SidebarGroup
+      className={cn(
+        "p-0 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0",
+        variant === "default" && "pt-0.5",
+        variant === "admin" &&
+          "mt-1 border-t border-sidebar-border/60 pt-3 group-data-[collapsible=icon]:mt-0.5 group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:pt-1",
+      )}
+    >
+      {label ? (
+        <SidebarGroupLabel className="mb-1.5 h-auto px-0.5 group-data-[collapsible=icon]:mb-0">
+          <span className="inline-flex items-center rounded-md bg-sidebar-accent/35 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {label}
+          </span>
+        </SidebarGroupLabel>
+      ) : null}
+      <SidebarGroupContent className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+        <SidebarMenu className="gap-0.5">
+          {items.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton
+                render={<Link href={item.href} />}
+                isActive={isNavActive(item.href)}
+                tooltip={item.label}
+              >
+                <item.icon />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   )
 }
 
@@ -172,6 +234,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { cohort: shellCohortDetails, canManagePod: shellCanManagePod } =
     useActiveCohortContext(activeProgramCode ?? null)
 
+  const effectiveRole =
+    pathCohortDetails?.role ?? shellCohortDetails?.role ?? role
+
   const canManagePod = pathProgramCode ? pathCanManagePod : shellCanManagePod
 
   const isCohortAdmin = Boolean(
@@ -182,10 +247,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showUmbrellaAdminView =
     shellCohortDetails &&
     isUmbrellaAdminView(
-      shellCohortDetails.role,
+      shellCohortDetails.realRole ?? shellCohortDetails.role,
       shellCohortDetails.cohort,
       shellCohortDetails.hasChildPods,
     )
+
+  const { isImpersonating, impersonation } = useIsImpersonating()
+  const umbrellaAdminActive = Boolean(showUmbrellaAdminView && !isImpersonating)
 
   const { groups, selectedPodId, selectPod } = useWorkspacePod(
     isCohortAdmin ? activeCohortId : undefined,
@@ -198,15 +266,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   )?.cohort.programCode
 
   const workspaceProgramCode =
-    showUmbrellaAdminView && selectedPodProgramCode
-      ? selectedPodProgramCode
-      : activeProgramCode
+    isImpersonating && impersonation
+      ? impersonation.cohort.programCode
+      : umbrellaAdminActive && selectedPodProgramCode
+        ? selectedPodProgramCode
+        : activeProgramCode
+
+  const impersonationCohortId =
+    isImpersonating && impersonation
+      ? impersonation.cohort._id
+      : umbrellaAdminActive && selectedPodId
+        ? selectedPodId
+        : isActivePod
+          ? activeCohortId
+          : pathCohortDetails?.cohort._id
+
+  const impersonationProgramCode =
+    isImpersonating && impersonation
+      ? impersonation.cohort.programCode
+      : umbrellaAdminActive && selectedPodProgramCode
+        ? selectedPodProgramCode
+        : (pathCohortDetails?.cohort.programCode ?? workspaceProgramCode)
 
   const showPodWorkspace =
     workspaceProgramCode &&
-    role &&
-    (canViewPodWorkspace(role, canManagePod) ||
-      (showUmbrellaAdminView && Boolean(selectedPodId)))
+    effectiveRole &&
+    (canViewPodWorkspace(effectiveRole, canManagePod) ||
+      (umbrellaAdminActive && Boolean(selectedPodId)))
 
   const podWorkspaceItems = workspaceProgramCode
     ? [
@@ -233,41 +319,60 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {
           href: cohortPath(workspaceProgramCode, "lightning-talks"),
           label: "Lightning Talks",
-          icon: MicIcon,
+          icon: ZapIcon,
         },
       ]
     : []
 
   const dashboardHref =
-    showUmbrellaAdminView && activeProgramCode && selectedPodProgramCode
+    umbrellaAdminActive && activeProgramCode && selectedPodProgramCode
       ? dashboardPath(activeProgramCode, selectedPodProgramCode)
       : activeProgramCode
         ? dashboardPath(activeProgramCode)
         : "/dashboard"
 
-  const navItems =
-    (cohorts?.length ?? 0) > 0 && activeProgramCode
+  const settingsNavItems =
+    !isImpersonating && effectiveRole === "podLeader" && activeProgramCode
+      ? [
+          ...(isCohortAdmin
+            ? [
+                {
+                  href: cohortPath(activeProgramCode, "settings"),
+                  label: "Cohort Settings",
+                  icon: SettingsIcon,
+                },
+              ]
+            : []),
+          ...((isCohortAdmin && selectedPodProgramCode) ||
+          (!isCohortAdmin && canManagePod)
+            ? [
+                {
+                  href: cohortPath(
+                    isCohortAdmin && selectedPodProgramCode
+                      ? selectedPodProgramCode
+                      : activeProgramCode,
+                    "settings",
+                  ),
+                  label: "Pod Settings",
+                  icon: SettingsIcon,
+                },
+              ]
+            : []),
+        ]
+      : []
+
+  const hasCohortContext =
+    (cohorts?.length ?? 0) > 0 && Boolean(activeProgramCode)
+
+  const workspaceNavItems: SidebarNavItem[] =
+    hasCohortContext && activeProgramCode
       ? [
           {
             href: dashboardHref,
             label: "Dashboard",
             icon: LayoutDashboardIcon,
           },
-          ...(showPodWorkspace ? podWorkspaceItems : []),
-          ...(role === "podLeader" && canManagePodWorkspace(role, canManagePod)
-            ? [
-                {
-                  href: cohortPath(activeProgramCode, "settings"),
-                  label: showUmbrellaAdminView
-                    ? "Cohort Settings"
-                    : isActivePod
-                      ? "Pod Settings"
-                      : "Cohort Settings",
-                  icon: SettingsIcon,
-                },
-              ]
-            : []),
-          ...(role === "fellow"
+          ...(effectiveRole === "fellow"
             ? [
                 {
                   href: myTasksPath(activeProgramCode),
@@ -276,6 +381,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 },
               ]
             : []),
+          ...(showPodWorkspace ? podWorkspaceItems : []),
+        ]
+      : [
+          {
+            href: "/cohorts",
+            label: "Cohorts",
+            icon: CalendarDaysIcon,
+          },
+        ]
+
+  const adminNavItems: SidebarNavItem[] =
+    hasCohortContext && !isImpersonating
+      ? [
+          ...settingsNavItems,
           ...(isUmbrellaAdmin(cohorts ?? [])
             ? [
                 {
@@ -286,13 +405,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ]
             : []),
         ]
-      : [
-          {
-            href: "/cohorts",
-            label: "Cohorts",
-            icon: CalendarDaysIcon,
-          },
-        ]
+      : []
 
   function isNavActive(href: string) {
     const path = href.split("?")[0] ?? href
@@ -315,7 +428,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               cohorts={cohorts ?? []}
               activeCohortId={activeCohortId}
             />
-            {isCohortAdmin ? (
+            {isCohortAdmin && !isImpersonating ? (
               <div className="flex flex-col gap-1">
                 <p className="px-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   Active Pod
@@ -327,27 +440,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
             ) : null}
+            {impersonationCohortId && impersonationProgramCode ? (
+              <ImpersonateFellowControl
+                cohortId={impersonationCohortId}
+                programCode={impersonationProgramCode}
+                disabled={isImpersonating}
+              />
+            ) : null}
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-2 group-data-[collapsible=icon]:px-0">
-          <SidebarGroup className="p-0 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
-            <SidebarGroupContent className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-              <SidebarMenu>
-                {navItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      render={<Link href={item.href} />}
-                      isActive={isNavActive(item.href)}
-                      tooltip={item.label}
-                    >
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        <SidebarContent className="flex flex-col gap-2 px-2 pt-1 pb-2 group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-0.5">
+          <SidebarNavGroup
+            label={hasCohortContext ? "Workspace" : undefined}
+            items={workspaceNavItems}
+            isNavActive={isNavActive}
+          />
+          <SidebarNavGroup
+            label="Admin"
+            items={adminNavItems}
+            isNavActive={isNavActive}
+            variant="admin"
+          />
         </SidebarContent>
         <SidebarFooter className="px-3 pt-2 pb-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:items-center">
           <SidebarUserFooter name={currentUser?.name ?? "Account"} />

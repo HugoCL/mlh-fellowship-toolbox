@@ -10,9 +10,14 @@ import {
   requireDirectoryManagement,
   requirePodLeader,
   requirePodManagementLeader,
+  requirePodSettingsManagement,
   requireUmbrellaLeader,
   resolveCohortAccess,
 } from "./auth"
+import {
+  applyImpersonationToMembership,
+  assertNotImpersonating,
+} from "./impersonation"
 
 export const authedQuery = customQuery(query, {
   args: {},
@@ -35,12 +40,21 @@ export const cohortQuery = customQuery(query, {
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
     const cohortAccess = await resolveCohortAccess(ctx, args.cohortId, user._id)
+    const { membership, impersonationSession } =
+      await applyImpersonationToMembership(
+        ctx,
+        user._id,
+        args.cohortId,
+        cohortAccess.membership,
+      )
 
     return {
       ctx: {
         ...ctx,
         user,
-        membership: cohortAccess.membership,
+        membership,
+        realMembership: cohortAccess.membership,
+        impersonationSession,
         cohortAccess,
         cohortId: args.cohortId,
       },
@@ -55,12 +69,21 @@ export const cohortCodeQuery = customQuery(query, {
     const user = await getCurrentUser(ctx)
     const cohort = await lookupCohortByProgramCode(ctx, args.programCode)
     const cohortAccess = await resolveCohortAccess(ctx, cohort._id, user._id)
+    const { membership, impersonationSession } =
+      await applyImpersonationToMembership(
+        ctx,
+        user._id,
+        cohort._id,
+        cohortAccess.membership,
+      )
 
     return {
       ctx: {
         ...ctx,
         user,
-        membership: cohortAccess.membership,
+        membership,
+        realMembership: cohortAccess.membership,
+        impersonationSession,
         cohortAccess,
         cohortId: cohort._id,
       },
@@ -73,19 +96,23 @@ export const cohortMutation = customMutation(mutation, {
   args: { cohortId: v.id("cohorts") },
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
-    const membership = await ctx.db
-      .query("cohortMemberships")
-      .withIndex("by_cohort_and_user", (q) =>
-        q.eq("cohortId", args.cohortId).eq("userId", user._id),
+    const cohortAccess = await resolveCohortAccess(ctx, args.cohortId, user._id)
+    const { membership, impersonationSession } =
+      await applyImpersonationToMembership(
+        ctx,
+        user._id,
+        args.cohortId,
+        cohortAccess.membership,
       )
-      .unique()
-
-    if (!membership) {
-      throw new Error("Not a member of this cohort")
-    }
 
     return {
-      ctx: { ...ctx, user, membership },
+      ctx: {
+        ...ctx,
+        user,
+        membership,
+        realMembership: cohortAccess.membership,
+        impersonationSession,
+      },
       args,
     }
   },
@@ -95,6 +122,7 @@ export const leaderQuery = customQuery(query, {
   args: { cohortId: v.id("cohorts") },
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
+    await assertNotImpersonating(ctx, user._id)
     const membership = await requirePodLeader(ctx, args.cohortId, user._id)
     return {
       ctx: { ...ctx, user, membership },
@@ -107,6 +135,7 @@ export const leaderMutation = customMutation(mutation, {
   args: { cohortId: v.id("cohorts") },
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
+    await assertNotImpersonating(ctx, user._id)
     const membership = await requirePodLeader(ctx, args.cohortId, user._id)
     return {
       ctx: { ...ctx, user, membership },
@@ -120,6 +149,7 @@ export const podManagementQuery = customQuery(query, {
   args: { cohortId: v.id("cohorts") },
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
+    await assertNotImpersonating(ctx, user._id)
     const { membership, cohort, hasChildPods } =
       await requirePodManagementLeader(ctx, args.cohortId, user._id)
     return {
@@ -133,10 +163,34 @@ export const podManagementMutation = customMutation(mutation, {
   args: { cohortId: v.id("cohorts") },
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
+    await assertNotImpersonating(ctx, user._id)
     const { membership, cohort, hasChildPods } =
       await requirePodManagementLeader(ctx, args.cohortId, user._id)
     return {
       ctx: { ...ctx, user, membership, cohort, hasChildPods },
+      args,
+    }
+  },
+})
+
+/** Pod settings — pod leader on pod, or cohort admin editing a child pod. */
+export const podSettingsMutation = customMutation(mutation, {
+  args: { cohortId: v.id("cohorts") },
+  input: async (ctx, args) => {
+    const user = await getCurrentUser(ctx)
+    await assertNotImpersonating(ctx, user._id)
+    const { cohortAccess, cohort } = await requirePodSettingsManagement(
+      ctx,
+      args.cohortId,
+      user._id,
+    )
+    return {
+      ctx: {
+        ...ctx,
+        user,
+        cohortAccess,
+        cohort,
+      },
       args,
     }
   },
@@ -147,6 +201,7 @@ export const directoryManagementMutation = customMutation(mutation, {
   args: { cohortId: v.id("cohorts") },
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
+    await assertNotImpersonating(ctx, user._id)
     const { cohortAccess, cohort } = await requireDirectoryManagement(
       ctx,
       args.cohortId,
@@ -170,6 +225,7 @@ export const umbrellaLeaderQuery = customQuery(query, {
   args: { cohortId: v.id("cohorts") },
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
+    await assertNotImpersonating(ctx, user._id)
     const { membership, cohort } = await requireUmbrellaLeader(
       ctx,
       args.cohortId,
@@ -186,6 +242,7 @@ export const umbrellaLeaderMutation = customMutation(mutation, {
   args: { cohortId: v.id("cohorts") },
   input: async (ctx, args) => {
     const user = await getCurrentUser(ctx)
+    await assertNotImpersonating(ctx, user._id)
     const { membership, cohort } = await requireUmbrellaLeader(
       ctx,
       args.cohortId,

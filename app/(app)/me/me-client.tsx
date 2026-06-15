@@ -20,7 +20,7 @@ import { api } from "@/convex/_generated/api"
 import { cohortPath } from "@/lib/cohort-routes"
 import { formatDate } from "@/lib/dates"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
-import type { OneOnOneStatus } from "@/lib/status"
+import { getStatusLabel } from "@/lib/status"
 
 export default function MyTasksPageClient() {
   const searchParams = useSearchParams()
@@ -175,12 +175,12 @@ export default function MyTasksPageClient() {
                   <Select
                     value={pair.status}
                     onValueChange={(value) => {
-                      if (!cohortId) return
+                      if (!value || !cohortId) return
                       void updatePeerStatus({
                         cohortId,
                         fellowAId: pair.fellowAId,
                         fellowBId: pair.fellowBId,
-                        status: value as OneOnOneStatus,
+                        status: value,
                       })
                     }}
                   >
@@ -188,7 +188,7 @@ export default function MyTasksPageClient() {
                       className="w-40"
                       aria-label={`Peer 1:1 with ${other?.name ?? "podmate"}`}
                     >
-                      <SelectValue />
+                      <SelectValue>{getStatusLabel(pair.status)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -227,12 +227,12 @@ export default function MyTasksPageClient() {
                   <Select
                     value={record.status}
                     onValueChange={(value) => {
-                      if (!cohortId || !cohortDetails.fellow) return
+                      if (!value || !cohortId || !cohortDetails.fellow) return
                       void updateLeaderStatus({
                         cohortId,
                         fellowId: cohortDetails.fellow._id,
                         instanceId: record.instanceId,
-                        status: value as OneOnOneStatus,
+                        status: value,
                       })
                     }}
                   >
@@ -240,7 +240,7 @@ export default function MyTasksPageClient() {
                       className="w-40"
                       aria-label={instance?.title ?? "Leader 1:1"}
                     >
-                      <SelectValue />
+                      <SelectValue>{getStatusLabel(record.status)}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>

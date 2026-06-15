@@ -1,4 +1,4 @@
-import type { Doc, Id } from "../_generated/dataModel"
+import type { Doc } from "../_generated/dataModel"
 import type { MutationCtx } from "../_generated/server"
 import { getMembership } from "./auth"
 import {
@@ -18,15 +18,8 @@ export async function acceptInviteForUser(
     throw new Error("This invitation is no longer valid")
   }
 
-  const normalizedEmail = user.email.trim().toLowerCase()
-  if (invite.email.trim().toLowerCase() !== normalizedEmail) {
-    throw new Error(
-      "This invitation was sent to a different email address. Sign in with the invited email to accept.",
-    )
-  }
-
   if (invite.role === "podLeader") {
-    await acceptPodLeaderInvite(ctx, invite, user._id)
+    await acceptPodLeaderInvite(ctx, invite, user)
     return
   }
 
@@ -44,8 +37,15 @@ export async function acceptInviteForUser(
 async function acceptPodLeaderInvite(
   ctx: MutationCtx,
   invite: Doc<"invites">,
-  userId: Id<"users">,
+  user: Doc<"users">,
 ): Promise<void> {
+  const normalizedEmail = user.email.trim().toLowerCase()
+  if (invite.email.trim().toLowerCase() !== normalizedEmail) {
+    throw new Error(
+      "This invitation was sent to a different email address. Sign in with the invited email to accept.",
+    )
+  }
+
   const parentCohort = await ctx.db.get("cohorts", invite.cohortId)
   if (!parentCohort) {
     throw new Error("Cohort not found")
@@ -58,7 +58,7 @@ async function acceptPodLeaderInvite(
   const alreadyLeadsGroup = await userLeadsGroupUnderParent(
     ctx,
     parentCohort._id,
-    userId,
+    user._id,
   )
   if (alreadyLeadsGroup) {
     await ctx.db.patch("invites", invite._id, { status: "accepted" })
@@ -77,12 +77,12 @@ async function acceptPodLeaderInvite(
       return
     }
 
-    await assignPodLeader(ctx, invite.groupCohortId, userId)
+    await assignPodLeader(ctx, invite.groupCohortId, user._id)
     await ctx.db.patch("invites", invite._id, { status: "accepted" })
     return
   }
 
-  const groupCohortId = await createPodGroupForLeader(ctx, parentCohort, userId)
+  const groupCohortId = await createPodGroupForLeader(ctx, parentCohort, user._id)
 
   await ctx.db.patch("invites", invite._id, {
     status: "accepted",
@@ -96,6 +96,11 @@ async function acceptFellowInvite(
   user: Doc<"users">,
 ): Promise<void> {
   const normalizedEmail = user.email.trim().toLowerCase()
+  if (invite.email.trim().toLowerCase() !== normalizedEmail) {
+    throw new Error(
+      "This invitation was sent to a different email address. Sign in with the invited email to accept.",
+    )
+  }
 
   const existingMembership = await getMembership(ctx, invite.cohortId, user._id)
   if (!existingMembership) {
@@ -134,7 +139,8 @@ async function acceptMentorInvite(
   invite: Doc<"invites">,
   user: Doc<"users">,
 ): Promise<void> {
-  const normalizedEmail = user.email.trim().toLowerCase()
+  const invitedEmail = invite.email.trim().toLowerCase()
+  const userEmail = user.email.trim().toLowerCase()
 
   const existingMembership = await getMembership(ctx, invite.cohortId, user._id)
   if (!existingMembership) {
@@ -149,18 +155,29 @@ async function acceptMentorInvite(
   const mentor = await ctx.db
     .query("mentors")
     .withIndex("by_cohort_and_email", (q) =>
-      q.eq("cohortId", invite.cohortId).eq("email", normalizedEmail),
+      q.eq("cohortId", invite.cohortId).eq("email", invitedEmail),
     )
     .unique()
 
-  if (mentor && !mentor.userId) {
-    await ctx.db.patch("mentors", mentor._id, { userId: user._id })
-  } else if (!mentor) {
+  if (mentor) {
+    if (mentor.userId && mentor.userId !== user._id) {
+      throw new Error(
+        "This mentor invitation is already linked to another account",
+      )
+    }
+    if (!mentor.userId) {
+      await ctx.db.patch("mentors", mentor._id, {
+        userId: user._id,
+        name: user.name,
+        email: userEmail,
+      })
+    }
+  } else {
     await ctx.db.insert("mentors", {
       cohortId: invite.cohortId,
       userId: user._id,
       name: user.name,
-      email: normalizedEmail,
+      email: userEmail,
       calendlyUrl: "",
       active: true,
       createdAt: Date.now(),

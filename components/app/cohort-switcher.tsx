@@ -95,7 +95,7 @@ export function CohortSwitcher({
           {cohorts.map((item) => (
             <DropdownMenuItem
               key={item.cohort._id}
-              onSelect={() =>
+              onClick={() =>
                 router.push(dashboardPath(item.cohort.programCode))
               }
             >

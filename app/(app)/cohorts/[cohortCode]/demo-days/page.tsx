@@ -1,13 +1,13 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
+import { Info } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -119,12 +119,14 @@ export default function DemoDaysPage() {
         description="Assign presentation dates and track demo completion."
       />
       <PageBody>
-        <Alert>
-          <AlertDescription>
-            For your demo day, share what you achieved in your portfolio and the
-            learnings from the current week.
-          </AlertDescription>
-        </Alert>
+        <p className="flex items-start gap-2 text-sm text-muted-foreground">
+          <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>
+            {isLeader
+              ? "Assign demo dates for fellows. Fellows can mark their own completed status."
+              : "For your demo day, share what you achieved in your portfolio and the learnings from the current week."}
+          </span>
+        </p>
 
         {isLeader && (data?.fellows ?? []).length > 0 ? (
           <PageToolbar title="Assign a demo date">

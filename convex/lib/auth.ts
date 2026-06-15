@@ -5,6 +5,7 @@ import {
   isUmbrellaCohort,
   parentHasChildPods,
 } from "./cohortScope"
+import { getActiveImpersonationSession } from "./impersonation"
 
 type Ctx = QueryCtx | MutationCtx
 
@@ -205,6 +206,36 @@ export async function requireDirectoryManagement(
   throw new Error("Pod leader or cohort admin access required")
 }
 
+/** Pod leader on a pod, or cohort admin editing a child pod — can update pod settings. */
+export async function requirePodSettingsManagement(
+  ctx: Ctx,
+  cohortId: Id<"cohorts">,
+  userId: Id<"users">,
+): Promise<{
+  cohortAccess: CohortAccess
+  cohort: Doc<"cohorts">
+}> {
+  const cohortAccess = await resolveCohortAccess(ctx, cohortId, userId)
+  const cohort = cohortAccess.cohort
+
+  if (!cohort.parentCohortId) {
+    throw new Error("Pod settings can only be updated on a pod cohort")
+  }
+
+  if (cohortAccess.kind === "umbrellaViewer") {
+    return { cohortAccess, cohort }
+  }
+
+  if (
+    cohortAccess.kind === "member" &&
+    cohortAccess.membership.role === "podLeader"
+  ) {
+    return { cohortAccess, cohort }
+  }
+
+  throw new Error("Pod leader or cohort admin access required")
+}
+
 export async function requirePodLeader(
   ctx: Ctx,
   cohortId: Id<"cohorts">,
@@ -271,6 +302,14 @@ export async function getFellowForUser(
   cohortId: Id<"cohorts">,
   userId: Id<"users">,
 ): Promise<Doc<"fellows"> | null> {
+  const session = await getActiveImpersonationSession(ctx, userId)
+  if (session && session.cohortId === cohortId) {
+    const fellow = await ctx.db.get("fellows", session.fellowId)
+    if (fellow) {
+      return fellow
+    }
+  }
+
   const fellows = await ctx.db
     .query("fellows")
     .withIndex("by_cohort", (q) => q.eq("cohortId", cohortId))

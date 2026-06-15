@@ -12,11 +12,13 @@ import {
   isUmbrellaCohort,
   parentHasChildPods,
 } from "./lib/cohortScope"
+import { applyCohortSettingsUpdate } from "./lib/cohortSettings"
 import {
   authedMutation,
   authedQuery,
   cohortCodeQuery,
   cohortQuery,
+  podSettingsMutation,
   umbrellaLeaderMutation,
   umbrellaLeaderQuery,
 } from "./lib/customFunctions"
@@ -29,6 +31,7 @@ import {
 } from "./lib/groups"
 import { baseProgramCode } from "./lib/programCode"
 import {
+  cohortStatusValidator,
   cohortValidator,
   fellowValidator,
   membershipValidator,
@@ -44,17 +47,30 @@ const cohortWithRoleValidator = v.object({
 const cohortDetailsValidator = v.object({
   cohort: cohortValidator,
   role: roleValidator,
+  realRole: roleValidator,
   fellow: v.union(fellowValidator, v.null()),
   mentor: v.union(mentorValidator, v.null()),
   hasChildPods: v.boolean(),
   canManagePod: v.boolean(),
   isUmbrellaViewer: v.boolean(),
   parentProgramCode: v.union(v.string(), v.null()),
+  impersonation: v.union(
+    v.object({
+      fellow: fellowValidator,
+      startedAt: v.number(),
+    }),
+    v.null(),
+  ),
 })
 
 type CohortDetailsCtx = QueryCtx & {
   user: { _id: Id<"users"> }
   membership: { role: "podLeader" | "fellow" | "mentor" }
+  realMembership?: { role: "podLeader" | "fellow" | "mentor" }
+  impersonationSession?: {
+    fellowId: Id<"fellows">
+    startedAt: number
+  } | null
   cohortAccess: CohortAccess
 }
 
@@ -81,15 +97,35 @@ async function buildCohortDetails(
     parentProgramCode = parent?.programCode ?? null
   }
 
+  let impersonation: {
+    fellow: NonNullable<Awaited<ReturnType<typeof getFellowForUser>>>
+    startedAt: number
+  } | null = null
+
+  if (ctx.impersonationSession) {
+    const impersonatedFellow = await ctx.db.get(
+      "fellows",
+      ctx.impersonationSession.fellowId,
+    )
+    if (impersonatedFellow) {
+      impersonation = {
+        fellow: impersonatedFellow,
+        startedAt: ctx.impersonationSession.startedAt,
+      }
+    }
+  }
+
   return {
     cohort,
     role: ctx.membership.role,
+    realRole: ctx.realMembership?.role ?? ctx.membership.role,
     fellow,
     mentor,
     hasChildPods,
     canManagePod,
     isUmbrellaViewer,
     parentProgramCode,
+    impersonation,
   }
 }
 
@@ -237,6 +273,44 @@ export const listMembers = cohortQuery({
     }
 
     return results
+  },
+})
+
+export const updateUmbrellaCohort = umbrellaLeaderMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    name: v.optional(v.string()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    status: v.optional(cohortStatusValidator),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await applyCohortSettingsUpdate(ctx, ctx.cohort, {
+      name: args.name,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      status: args.status,
+    })
+    return null
+  },
+})
+
+export const updatePod = podSettingsMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    name: v.optional(v.string()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await applyCohortSettingsUpdate(ctx, ctx.cohort, {
+      name: args.name,
+      startDate: args.startDate,
+      endDate: args.endDate,
+    })
+    return null
   },
 })
 

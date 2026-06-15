@@ -87,6 +87,11 @@ export default function InviteConfirmationPage() {
 
   const cohortLabel =
     invite.podProgramCode ?? invite.cohort.programCode ?? invite.cohort.name
+  const requiresEmailMatch =
+    invite.role === "fellow" || invite.role === "podLeader"
+  const canAccept =
+    Boolean(invite.userEmail) &&
+    (!requiresEmailMatch || invite.emailMatchesUser)
 
   return (
     <div className="flex min-h-svh items-center justify-center p-6">
@@ -113,7 +118,9 @@ export default function InviteConfirmationPage() {
             ) : null}
           </div>
 
-          {!invite.emailMatchesUser && invite.userEmail ? (
+          {requiresEmailMatch &&
+          !invite.emailMatchesUser &&
+          invite.userEmail ? (
             <Alert>
               <AlertDescription>
                 This invitation was sent to{" "}
@@ -125,7 +132,7 @@ export default function InviteConfirmationPage() {
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2">
           <Button
-            disabled={!invite.emailMatchesUser || isAccepting}
+            disabled={!canAccept || isAccepting}
             onClick={async () => {
               setIsAccepting(true)
               try {

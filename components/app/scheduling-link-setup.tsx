@@ -43,8 +43,8 @@ export function SchedulingLinkSetup({
       {showAction ? (
         <Alert className="mb-4 border-0 bg-transparent p-0">
           <AlertDescription>
-            Add your scheduling link so podmates can book time with you. This
-            is required to complete onboarding.
+            Add your scheduling link so podmates can book time with you. This is
+            required to complete onboarding.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -87,7 +87,7 @@ export function SchedulingLinkSetup({
               type="url"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://calendly.com/…"
+              placeholder="https://your-scheduling-link.example"
               required
             />
           </Field>

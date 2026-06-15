@@ -4,22 +4,20 @@ import { useQuery } from "convex/react"
 import { useParams } from "next/navigation"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
-import { buildGroupProgramCode } from "@/convex/lib/programCode"
-import { slugToProgramCode } from "@/lib/cohort-routes"
+import {
+  parseProgramCodeForRoute,
+  slugToProgramCode,
+} from "@/lib/cohort-routes"
 
 export function useCohortRoute() {
-  const params = useParams<{ cohortCode: string; podNumber?: string }>()
-  const umbrellaProgramCode = params.cohortCode
+  const params = useParams<{ cohortCode: string }>()
+  const programCode = params.cohortCode
     ? slugToProgramCode(decodeURIComponent(params.cohortCode))
     : null
 
-  const programCode =
-    umbrellaProgramCode && params.podNumber
-      ? buildGroupProgramCode(
-          umbrellaProgramCode,
-          Number.parseInt(params.podNumber, 10),
-        )
-      : umbrellaProgramCode
+  const { umbrellaProgramCode, podNumber } = programCode
+    ? parseProgramCodeForRoute(programCode)
+    : { umbrellaProgramCode: null, podNumber: null }
 
   const cohortData = useQuery(
     api.cohorts.getCohortByProgramCode,
@@ -34,9 +32,7 @@ export function useCohortRoute() {
   return {
     programCode,
     umbrellaProgramCode,
-    podNumber: params.podNumber
-      ? Number.parseInt(params.podNumber, 10)
-      : null,
+    podNumber,
     cohortId: (cohortData?.cohort._id ?? null) as Id<"cohorts"> | null,
     cohortData,
     settingsProgramCode,

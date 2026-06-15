@@ -169,4 +169,12 @@ export default defineSchema({
     .index("by_cohort", ["cohortId"])
     .index("by_fellow", ["fellowId"])
     .index("by_slot", ["slotId"]),
+
+  /** Active impersonation session — one per actor at a time. */
+  impersonationSessions: defineTable({
+    actorUserId: v.id("users"),
+    fellowId: v.id("fellows"),
+    cohortId: v.id("cohorts"),
+    startedAt: v.number(),
+  }).index("by_actor", ["actorUserId"]),
 })

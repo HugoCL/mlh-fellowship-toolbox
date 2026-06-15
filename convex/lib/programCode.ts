@@ -20,17 +20,11 @@ export function baseProgramCode(programCode: string): string {
   return programCode.split(".").slice(0, -1).join(".")
 }
 
-/** Nested workspace path: /cohorts/{umbrella}/pods/{n}/{segment} or umbrella settings. */
+/** Workspace path: /cohorts/{program-code-slug}/{segment} (umbrella or pod slug). */
 export function cohortWorkspacePath(
   programCode: string,
   segment: string,
 ): string {
-  if (hasGroupSuffix(programCode)) {
-    const parts = programCode.split(".")
-    const podNumber = parts.at(-1)!
-    const umbrella = parts.slice(0, -1).join(".")
-    return `/cohorts/${programCodeToSlug(umbrella)}/pods/${podNumber}/${segment}`
-  }
   return `/cohorts/${programCodeToSlug(programCode)}/${segment}`
 }
 

@@ -12,6 +12,7 @@ import {
   getFeatureSegmentFromPath,
   isFeaturePagePath,
 } from "@/lib/cohort-routes"
+import { useIsImpersonating } from "@/lib/use-impersonation"
 
 export function useWorkspacePod(
   umbrellaCohortId: Id<"cohorts"> | undefined,
@@ -21,10 +22,15 @@ export function useWorkspacePod(
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { isImpersonating, isLoading: isImpersonationLoading } =
+    useIsImpersonating()
 
   const groups = useQuery(
     api.cohorts.listGroupsForParent,
-    showUmbrellaAdminView && umbrellaCohortId
+    showUmbrellaAdminView &&
+      umbrellaCohortId &&
+      !isImpersonationLoading &&
+      !isImpersonating
       ? { cohortId: umbrellaCohortId }
       : "skip",
   )

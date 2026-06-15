@@ -1,15 +1,17 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import { CopyIcon, UserPlusIcon } from "lucide-react"
+import { CalendarIcon, CopyIcon, MailIcon, UserPlusIcon } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -29,14 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { inviteUrl } from "@/lib/invite-url"
@@ -53,6 +47,20 @@ function roleBadgeLabel(role: "podLeader" | "fellow" | "mentor"): string {
     case "mentor":
       return "Mentor"
   }
+}
+
+function getInitials(name: string): string {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter((part) => part.length > 0)
+  if (parts.length === 0) {
+    return "?"
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase()
+  }
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
 export default function DirectoryPage() {
@@ -74,6 +82,9 @@ export default function DirectoryPage() {
 
   const isPod = Boolean(cohortData?.cohort.parentCohortId)
   const setupScheduling = searchParams.get("setup") === "scheduling"
+  const isImpersonating = cohortData?.impersonation != null
+  const canInvite = directory?.canInvite === true && !isImpersonating
+
   const needsOwnSchedulingLink =
     cohortData &&
     ((cohortData.role === "fellow" &&
@@ -128,9 +139,9 @@ export default function DirectoryPage() {
     <>
       <PageHeader
         title="Directory"
-        description={`People in pod ${directory.cohortProgramCode}. Fellows and mentors can view this list; pod leaders and cohort admins can invite new members.`}
+        description={`Members of pod ${directory.cohortProgramCode}.`}
         actions={
-          directory.canInvite ? (
+          canInvite ? (
             <DialogTrigger render={<Button />}>
               <UserPlusIcon data-icon="inline-start" />
               Invite to pod
@@ -171,12 +182,9 @@ export default function DirectoryPage() {
             </section>
           ) : null}
 
-          <DirectoryTable
-            people={directory.people}
-            readOnly={!directory.canInvite}
-          />
+          <DirectoryGrid people={directory.people} />
 
-          {directory.canInvite && directory.pendingInvites.length > 0 ? (
+          {canInvite && directory.pendingInvites.length > 0 ? (
             <PendingInvitesList invites={directory.pendingInvites} />
           ) : null}
         </div>
@@ -184,7 +192,7 @@ export default function DirectoryPage() {
     </>
   )
 
-  if (!directory.canInvite) {
+  if (!canInvite) {
     return pageContent
   }
 
@@ -195,8 +203,8 @@ export default function DirectoryPage() {
         <DialogHeader>
           <DialogTitle>Invite to pod</DialogTitle>
           <DialogDescription>
-            Send an invitation link. They&apos;ll sign in with Clerk and
-            confirm before joining.
+            Send an invitation link. They&apos;ll sign in with Clerk and confirm
+            before joining.
           </DialogDescription>
         </DialogHeader>
 
@@ -365,89 +373,108 @@ function PendingInvitesList({
   )
 }
 
-function DirectoryTable({
-  people,
-  readOnly,
-}: {
-  people: Array<{
-    _id: string
-    name: string
-    email: string | null
-    role: "podLeader" | "fellow" | "mentor"
-    calendlyUrl: string | null
-    joined: boolean
-    pendingInvite: boolean
-  }>
-  readOnly: boolean
-}) {
+type DirectoryPerson = {
+  _id: string
+  name: string
+  email: string | null
+  role: "podLeader" | "fellow" | "mentor"
+  calendlyUrl: string | null
+  imageUrl: string | null
+  joined: boolean
+  pendingInvite: boolean
+}
+
+function DirectoryGrid({ people }: { people: Array<DirectoryPerson> }) {
   return (
     <section className="flex w-full flex-col gap-4">
       <div>
         <h2 className="font-heading text-lg font-semibold">People</h2>
-        {!readOnly ? (
-          <p className="mt-1 text-sm text-muted-foreground">
-            Members who haven&apos;t accepted yet show as pending.
+      </div>
+      {people.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
+          No people in this pod yet.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {people.map((person) => (
+            <DirectoryCard key={person._id} person={person} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function DirectoryCard({ person }: { person: DirectoryPerson }) {
+  const showCalendly = person.role !== "podLeader"
+  return (
+    <Card className="gap-0 p-5 transition-shadow hover:ring-foreground/20 hover:shadow-sm">
+      <div className="flex items-start gap-4">
+        <Avatar size="lg" className="size-12">
+          {person.imageUrl ? (
+            <AvatarImage src={person.imageUrl} alt={person.name} />
+          ) : null}
+          <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
+            {getInitials(person.name)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <p className="truncate font-heading text-sm font-semibold leading-tight">
+            {person.name}
           </p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary">{roleBadgeLabel(person.role)}</Badge>
+            {person.pendingInvite ? (
+              <Badge
+                variant="outline"
+                className="text-amber-600 dark:text-amber-400"
+              >
+                Invite pending
+              </Badge>
+            ) : person.joined ? (
+              <Badge
+                variant="outline"
+                className="text-emerald-600 dark:text-emerald-400"
+              >
+                Active
+              </Badge>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-2 text-xs/relaxed text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <MailIcon className="size-3.5 shrink-0" />
+          {person.email ? (
+            <a
+              href={`mailto:${person.email}`}
+              className="truncate text-foreground underline-offset-4 hover:underline"
+            >
+              {person.email}
+            </a>
+          ) : (
+            <span>No email</span>
+          )}
+        </div>
+        {showCalendly ? (
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="size-3.5 shrink-0" />
+            {person.calendlyUrl ? (
+              <a
+                href={person.calendlyUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-foreground underline-offset-4 hover:underline"
+              >
+                Open scheduling link
+              </a>
+            ) : (
+              <span>Scheduling link not set</span>
+            )}
+          </div>
         ) : null}
       </div>
-      <div className="w-full overflow-x-auto rounded-lg border border-border/70">
-        <Table className="w-full">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[18%]">Name</TableHead>
-              <TableHead className="w-[12%]">Role</TableHead>
-              <TableHead className="w-[22%]">Email</TableHead>
-              <TableHead className="w-[36%]">Scheduling</TableHead>
-              <TableHead className="w-[12%]">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {people.map((person) => (
-              <TableRow key={person._id}>
-                <TableCell className="font-medium">{person.name}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">
-                    {roleBadgeLabel(person.role)}
-                  </Badge>
-                </TableCell>
-                <TableCell>{person.email ?? "—"}</TableCell>
-                <TableCell className="max-w-0 text-muted-foreground">
-                  {person.calendlyUrl ? (
-                    <a
-                      href={person.calendlyUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block truncate text-foreground underline-offset-4 hover:underline"
-                    >
-                      {person.calendlyUrl}
-                    </a>
-                  ) : person.role === "podLeader" ? (
-                    "—"
-                  ) : (
-                    "Not set"
-                  )}
-                </TableCell>
-                <TableCell>
-                  {person.joined ? (
-                    <span className="text-muted-foreground">Joined</span>
-                  ) : person.pendingInvite ? (
-                    <Badge variant="outline">Invite pending</Badge>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {people.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground">
-                  No people in this pod yet.
-                </TableCell>
-              </TableRow>
-            ) : null}
-          </TableBody>
-        </Table>
-      </div>
-    </section>
+    </Card>
   )
 }

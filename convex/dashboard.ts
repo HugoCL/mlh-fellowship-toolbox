@@ -10,11 +10,8 @@ function hasSchedulingLink(url: string | undefined | null): boolean {
 }
 
 function podBasePath(programCode: string): string {
-  const parts = programCode.split(".")
-  const podNumber = parts.at(-1) ?? "1"
-  const umbrella = parts.slice(0, -1).join(".")
-  const slug = umbrella.replace(/\./g, "-")
-  return `/cohorts/${slug}/pods/${podNumber}`
+  const slug = programCode.replace(/\./g, "-")
+  return `/cohorts/${slug}`
 }
 
 const setupTaskValidator = v.object({
@@ -286,7 +283,7 @@ async function buildLeaderDashboard(
     setupTasks.push({
       id: "missing-calendly",
       title: `${fellowsMissingCalendly} fellow${fellowsMissingCalendly === 1 ? "" : "s"} missing scheduling links`,
-      description: "Fellows need Calendly links for peer booking.",
+      description: "Fellows need scheduling links for peer booking.",
       href: `${basePath}/directory`,
       priority: "medium",
     })

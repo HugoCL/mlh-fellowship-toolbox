@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app/app-shell"
 import { EnsureUser } from "@/components/app/ensure-user"
+import { ImpersonationBanner } from "@/components/app/impersonation-banner"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               Fellowship Toolbox
             </span>
           </div>
+          <ImpersonationBanner />
           {children}
         </SidebarInset>
       </AppShell>

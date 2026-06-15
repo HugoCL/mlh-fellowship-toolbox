@@ -1,13 +1,13 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
+import { Info } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -65,10 +65,30 @@ export default function LightningTalksPage() {
     cohort.hasChildPods &&
     !cohort.isUmbrellaViewer
   const myFellowId = cohort?.fellow?._id
-  const talkMap = new Map(
-    (data?.talks ?? []).map((talk) => [talk.fellowId, talk]),
+  const fellowMap = new Map(
+    (data?.fellows ?? []).map((fellow) => [fellow._id, fellow]),
   )
   const slotMap = new Map((data?.slots ?? []).map((slot) => [slot._id, slot]))
+  const registeredTalks = (data?.talks ?? [])
+    .flatMap((talk) => {
+      const fellow = fellowMap.get(talk.fellowId)
+      if (!fellow) {
+        return []
+      }
+      return [{ talk, fellow, slot: slotMap.get(talk.slotId) }]
+    })
+    .sort(
+      (a, b) =>
+        (a.slot?.slotDate ?? Number.MAX_SAFE_INTEGER) -
+        (b.slot?.slotDate ?? Number.MAX_SAFE_INTEGER),
+    )
+  const myTalk = myFellowId
+    ? registeredTalks.find((entry) => entry.talk.fellowId === myFellowId)?.talk
+    : undefined
+  const unregisteredFellows = (data?.fellows ?? []).filter(
+    (fellow) =>
+      !registeredTalks.some((entry) => entry.talk.fellowId === fellow._id),
+  )
 
   if (isLoading || data === undefined) {
     return (
@@ -127,12 +147,13 @@ export default function LightningTalksPage() {
         description="Schedule short technical talks and track completion."
       />
       <PageBody>
-        <Alert>
-          <AlertDescription>
+        <p className="flex items-start gap-2 text-sm text-muted-foreground">
+          <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>
             Present any technical topic you like in a 5–15 minute talk.
             Non-technical topics are welcome too.
-          </AlertDescription>
-        </Alert>
+          </span>
+        </p>
 
         {isLeader ? (
           <PageToolbar title="Add a talk slot">
@@ -170,7 +191,7 @@ export default function LightningTalksPage() {
           </PageToolbar>
         ) : null}
 
-        {!isLeader && cohort?.fellow ? (
+        {!isLeader && cohort?.fellow && !myTalk ? (
           <form
             className="rounded-lg border border-border/70 p-4"
             onSubmit={async (event) => {
@@ -260,7 +281,7 @@ export default function LightningTalksPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {(data?.fellows ?? []).map((fellow) => (
+                      {unregisteredFellows.map((fellow) => (
                         <SelectItem key={fellow._id} value={fellow._id}>
                           {fellow.name}
                         </SelectItem>
@@ -331,6 +352,15 @@ export default function LightningTalksPage() {
               ) : null
             }
           />
+        ) : registeredTalks.length === 0 ? (
+          <EmptyState
+            title="No lightning talks yet"
+            description={
+              isLeader
+                ? "Assign talks to fellows or wait for them to enroll once you've added slots."
+                : "Enroll in a slot above when your pod leader adds talk dates."
+            }
+          />
         ) : (
           <div className="overflow-auto rounded-lg border border-border/70">
             <Table>
@@ -343,27 +373,24 @@ export default function LightningTalksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(data?.fellows ?? []).map((fellow) => {
-                  const talk = talkMap.get(fellow._id)
-                  const slot = talk ? slotMap.get(talk.slotId) : undefined
+                {registeredTalks.map(({ talk, fellow, slot }) => {
                   const editable = isLeader || myFellowId === fellow._id
 
                   return (
-                    <TableRow key={fellow._id}>
+                    <TableRow key={talk._id}>
                       <TableCell className="font-medium">
                         {fellow.name}
                       </TableCell>
                       <TableCell>
                         {slot ? formatDate(slot.slotDate) : "—"}
                       </TableCell>
-                      <TableCell>{talk?.topic ?? "—"}</TableCell>
+                      <TableCell>{talk.topic}</TableCell>
                       <TableCell>
                         <Checkbox
-                          checked={talk?.completed ?? false}
-                          disabled={!editable || !talk}
+                          checked={talk.completed}
+                          disabled={!editable}
                           aria-label={`Completed lightning talk for ${fellow.name}`}
                           onCheckedChange={(checked) => {
-                            if (!talk) return
                             void updateTalkCompletion({
                               cohortId,
                               talkId: talk._id,

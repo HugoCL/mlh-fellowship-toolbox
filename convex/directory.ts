@@ -16,6 +16,7 @@ const directoryPersonValidator = v.object({
     v.literal("mentor"),
   ),
   calendlyUrl: v.union(v.string(), v.null()),
+  imageUrl: v.union(v.string(), v.null()),
   joined: v.boolean(),
   pendingInvite: v.boolean(),
 })
@@ -43,6 +44,7 @@ export const getDirectory = cohortQuery({
     const isUmbrellaViewer = ctx.cohortAccess.kind === "umbrellaViewer"
     const isPod = Boolean(cohort.parentCohortId)
     const canInvite =
+      !ctx.impersonationSession &&
       isPod &&
       (isUmbrellaViewer ||
         (ctx.cohortAccess.kind === "member" &&
@@ -54,6 +56,7 @@ export const getDirectory = cohortQuery({
       email: string | null
       role: "podLeader" | "fellow" | "mentor"
       calendlyUrl: string | null
+      imageUrl: string | null
       joined: boolean
       pendingInvite: boolean
     }> = []
@@ -75,6 +78,7 @@ export const getDirectory = cohortQuery({
           email: user.email,
           role: "podLeader",
           calendlyUrl: null,
+          imageUrl: user.imageUrl ?? null,
           joined: true,
           pendingInvite: false,
         })
@@ -87,12 +91,16 @@ export const getDirectory = cohortQuery({
       .collect()
 
     for (const fellow of fellows) {
+      const fellowUser = fellow.userId
+        ? await ctx.db.get("users", fellow.userId)
+        : null
       people.push({
         _id: fellow._id,
         name: fellow.name,
         email: fellow.email,
         role: "fellow",
         calendlyUrl: fellow.calendlyUrl?.trim() || null,
+        imageUrl: fellowUser?.imageUrl ?? null,
         joined: Boolean(fellow.userId),
         pendingInvite: !fellow.userId,
       })
@@ -104,12 +112,16 @@ export const getDirectory = cohortQuery({
       .collect()
 
     for (const mentor of mentors) {
+      const mentorUser = mentor.userId
+        ? await ctx.db.get("users", mentor.userId)
+        : null
       people.push({
         _id: mentor._id,
         name: mentor.name,
         email: mentor.email ?? null,
         role: "mentor",
         calendlyUrl: mentor.calendlyUrl.trim() || null,
+        imageUrl: mentorUser?.imageUrl ?? null,
         joined: Boolean(mentor.userId),
         pendingInvite: !mentor.userId && Boolean(mentor.email),
       })

@@ -24,10 +24,12 @@ import {
   isUmbrellaAdminView,
 } from "@/lib/cohort-access"
 import { cohortPath } from "@/lib/cohort-routes"
+import { useIsImpersonating } from "@/lib/use-impersonation"
 import { useWorkspacePod } from "@/lib/use-workspace-pod"
 
 export default function DashboardPageClient() {
   const searchParams = useSearchParams()
+  const { isImpersonating, impersonation } = useIsImpersonating()
   const cohorts = useQuery(api.cohorts.listMyCohorts, {})
   const requestedCohortCode = searchParams.get("cohort")
   const activeCohort =
@@ -41,37 +43,57 @@ export default function DashboardPageClient() {
 
   const isCohortAdmin =
     cohortDetails &&
-    isCohortAdminOnUmbrella(cohortDetails.role, cohortDetails.cohort)
+    isCohortAdminOnUmbrella(
+      cohortDetails.realRole ?? cohortDetails.role,
+      cohortDetails.cohort,
+    )
 
   const showUmbrellaAdminView =
+    !isImpersonating &&
     cohortDetails &&
     isUmbrellaAdminView(
-      cohortDetails.role,
+      cohortDetails.realRole ?? cohortDetails.role,
       cohortDetails.cohort,
       cohortDetails.hasChildPods,
     )
 
-  const { selectedPodId, selectedPod, groups, hasPods } = useWorkspacePod(
-    isCohortAdmin && activeCohort ? activeCohort.cohort._id : undefined,
-    isCohortAdmin && activeCohort ? activeCohort.cohort.programCode : undefined,
-    Boolean(isCohortAdmin && activeCohort),
-  )
-
-  const viewingPodId =
-    activeCohort &&
-    (showUmbrellaAdminView && selectedPodId
-      ? selectedPodId
-      : activeCohort.cohort._id)
-
-  const insights = useQuery(
-    api.dashboard.getDashboardInsights,
-    viewingPodId && (!showUmbrellaAdminView || selectedPodId)
-      ? { cohortId: viewingPodId }
+  const impersonatedPodDetails = useQuery(
+    api.cohorts.getCohort,
+    isImpersonating && impersonation
+      ? { cohortId: impersonation.cohort._id }
       : "skip",
   )
 
-  const viewingPodProgramCode =
-    showUmbrellaAdminView && selectedPod
+  const effectiveCohortDetails =
+    isImpersonating && impersonatedPodDetails
+      ? impersonatedPodDetails
+      : cohortDetails
+
+  const { selectedPodId, selectedPod, groups, hasPods } = useWorkspacePod(
+    isCohortAdmin && activeCohort && !isImpersonating
+      ? activeCohort.cohort._id
+      : undefined,
+    isCohortAdmin && activeCohort && !isImpersonating
+      ? activeCohort.cohort.programCode
+      : undefined,
+    Boolean(isCohortAdmin && activeCohort && !isImpersonating),
+  )
+
+  const viewingPodId = isImpersonating
+    ? impersonation?.cohort._id
+    : activeCohort &&
+      (showUmbrellaAdminView && selectedPodId
+        ? selectedPodId
+        : activeCohort.cohort._id)
+
+  const insights = useQuery(
+    api.dashboard.getDashboardInsights,
+    viewingPodId ? { cohortId: viewingPodId } : "skip",
+  )
+
+  const viewingPodProgramCode = isImpersonating
+    ? (impersonation?.cohort.programCode ?? "")
+    : showUmbrellaAdminView && selectedPod
       ? selectedPod.cohort.programCode
       : (activeCohort?.cohort.programCode ?? "")
 
@@ -117,8 +139,11 @@ export default function DashboardPageClient() {
   }
 
   function dashboardDescription() {
-    if (!activeCohort || !cohortDetails) {
+    if (!activeCohort || !effectiveCohortDetails) {
       return "Loading…"
+    }
+    if (isImpersonating && impersonation) {
+      return `${impersonation.cohort.programCode} · Viewing as fellow`
     }
     if (showUmbrellaAdminView && selectedPod) {
       return `${selectedPod.cohort.programCode} · Cohort admin (viewing pod)`
@@ -126,10 +151,10 @@ export default function DashboardPageClient() {
     if (showUmbrellaAdminView) {
       return `${activeCohort.cohort.programCode} · Cohort administrator`
     }
-    if (cohortDetails.canManagePod) {
+    if (effectiveCohortDetails.canManagePod) {
       return `${activeCohort.cohort.programCode} · Pod leader`
     }
-    if (cohortDetails.role === "mentor") {
+    if (effectiveCohortDetails.role === "mentor") {
       return `${activeCohort.cohort.programCode} · Mentor`
     }
     return `${activeCohort.cohort.programCode} · Fellow`
@@ -153,9 +178,11 @@ export default function DashboardPageClient() {
   }
 
   const headerCohort =
-    showUmbrellaAdminView && selectedPod
-      ? selectedPod.cohort
-      : activeCohort.cohort
+    isImpersonating && impersonation
+      ? impersonation.cohort
+      : showUmbrellaAdminView && selectedPod
+        ? selectedPod.cohort
+        : activeCohort.cohort
 
   return (
     <>
@@ -184,7 +211,7 @@ export default function DashboardPageClient() {
             cohortId={viewingPodId!}
             programCode={viewingPodProgramCode}
             needsCalendly={insights.needsCalendly}
-            calendlyUrl={cohortDetails?.fellow?.calendlyUrl}
+            calendlyUrl={effectiveCohortDetails?.fellow?.calendlyUrl}
             actionItems={insights.actionItems}
             completedCount={insights.completedCount}
             totalCount={insights.totalCount}
@@ -194,7 +221,7 @@ export default function DashboardPageClient() {
             cohortId={viewingPodId!}
             programCode={viewingPodProgramCode}
             needsCalendly={insights.needsCalendly}
-            calendlyUrl={cohortDetails?.mentor?.calendlyUrl}
+            calendlyUrl={effectiveCohortDetails?.mentor?.calendlyUrl}
             pendingCount={insights.pendingCount}
             assignments={insights.assignments}
           />
