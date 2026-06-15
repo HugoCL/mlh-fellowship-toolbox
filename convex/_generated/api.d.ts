@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as actionItems from "../actionItems.js";
 import type * as cohorts from "../cohorts.js";
 import type * as dashboard from "../dashboard.js";
 import type * as demoDays from "../demoDays.js";
@@ -15,6 +16,7 @@ import type * as directory from "../directory.js";
 import type * as fellows from "../fellows.js";
 import type * as impersonation from "../impersonation.js";
 import type * as invites from "../invites.js";
+import type * as lib_actionItemsHelpers from "../lib/actionItemsHelpers.js";
 import type * as lib_assignments from "../lib/assignments.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_cohortScope from "../lib/cohortScope.js";
@@ -38,6 +40,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  actionItems: typeof actionItems;
   cohorts: typeof cohorts;
   dashboard: typeof dashboard;
   demoDays: typeof demoDays;
@@ -45,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   fellows: typeof fellows;
   impersonation: typeof impersonation;
   invites: typeof invites;
+  "lib/actionItemsHelpers": typeof lib_actionItemsHelpers;
   "lib/assignments": typeof lib_assignments;
   "lib/auth": typeof lib_auth;
   "lib/cohortScope": typeof lib_cohortScope;

@@ -8,6 +8,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   LayoutDashboardIcon,
+  ListTodoIcon,
   type LucideIcon,
   MessagesSquareIcon,
   PresentationIcon,
@@ -320,6 +321,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           href: cohortPath(workspaceProgramCode, "lightning-talks"),
           label: "Lightning Talks",
           icon: ZapIcon,
+        },
+        {
+          href: cohortPath(workspaceProgramCode, "action-items"),
+          label: "Action Items",
+          icon: ListTodoIcon,
         },
       ]
     : []

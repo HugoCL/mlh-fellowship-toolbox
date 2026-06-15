@@ -1,6 +1,7 @@
 import { v } from "convex/values"
 import type { Id } from "./_generated/dataModel"
 import type { QueryCtx } from "./_generated/server"
+import { isFellowTargeted } from "./lib/actionItemsHelpers"
 import { getFellowForUser, getMentorForUser } from "./lib/auth"
 import { canManagePodAsLeader, parentHasChildPods } from "./lib/cohortScope"
 import { cohortQuery } from "./lib/customFunctions"
@@ -562,6 +563,47 @@ async function buildFellowDashboard(
     })
   }
 
+  const customActionItems = await ctx.db
+    .query("actionItems")
+    .withIndex("by_cohort", (q) => q.eq("cohortId", cohortId))
+    .collect()
+
+  const myCustomCompletions = await ctx.db
+    .query("actionItemCompletions")
+    .withIndex("by_cohort_and_fellow", (q) =>
+      q.eq("cohortId", cohortId).eq("fellowId", fellow._id),
+    )
+    .collect()
+
+  const completedCustomIds = new Set(
+    myCustomCompletions.map((entry) => entry.actionItemId),
+  )
+
+  for (const item of customActionItems) {
+    if (!isFellowTargeted(item, fellow._id)) {
+      continue
+    }
+    if (completedCustomIds.has(item._id)) {
+      continue
+    }
+    const dueLabel = new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(item.dueAt))
+    actionItems.push({
+      id: `custom-${item._id}`,
+      title: item.title,
+      subtitle:
+        item.message.length > 80
+          ? `${item.message.slice(0, 80)}… · Due ${dueLabel}`
+          : `${item.message} · Due ${dueLabel}`,
+      href: `${basePath}/action-items`,
+      status: "todo",
+    })
+  }
+
   let completedCount = 0
   let totalCount = 0
 
@@ -592,6 +634,16 @@ async function buildFellowDashboard(
   if (lightningTalk) {
     totalCount += 1
     if (lightningTalk.completed) {
+      completedCount += 1
+    }
+  }
+
+  for (const item of customActionItems) {
+    if (!isFellowTargeted(item, fellow._id)) {
+      continue
+    }
+    totalCount += 1
+    if (completedCustomIds.has(item._id)) {
       completedCount += 1
     }
   }

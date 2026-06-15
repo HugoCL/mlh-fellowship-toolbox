@@ -170,6 +170,29 @@ export default defineSchema({
     .index("by_fellow", ["fellowId"])
     .index("by_slot", ["slotId"]),
 
+  actionItems: defineTable({
+    cohortId: v.id("cohorts"),
+    title: v.string(),
+    message: v.string(),
+    linkUrl: v.optional(v.string()),
+    dueAt: v.number(),
+    targetAllFellows: v.boolean(),
+    targetFellowIds: v.optional(v.array(v.id("fellows"))),
+    createdByUserId: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_cohort", ["cohortId"]),
+
+  actionItemCompletions: defineTable({
+    actionItemId: v.id("actionItems"),
+    cohortId: v.id("cohorts"),
+    fellowId: v.id("fellows"),
+    completedAt: v.number(),
+    updatedByUserId: v.id("users"),
+  })
+    .index("by_action_item", ["actionItemId"])
+    .index("by_cohort_and_fellow", ["cohortId", "fellowId"])
+    .index("by_action_item_and_fellow", ["actionItemId", "fellowId"]),
+
   /** Active impersonation session — one per actor at a time. */
   impersonationSessions: defineTable({
     actorUserId: v.id("users"),

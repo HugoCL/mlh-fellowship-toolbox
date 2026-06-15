@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react"
 import { EyeIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { toast } from "sonner"
 import {
   Alert,
@@ -17,6 +18,13 @@ export function ImpersonationBanner() {
   const router = useRouter()
   const impersonation = useQuery(api.impersonation.getActiveImpersonation, {})
   const stopImpersonation = useMutation(api.impersonation.stopImpersonation)
+  const cleanupStaleImpersonation = useMutation(
+    api.impersonation.cleanupStaleImpersonation,
+  )
+
+  useEffect(() => {
+    void cleanupStaleImpersonation({})
+  }, [cleanupStaleImpersonation])
 
   if (!impersonation) {
     return null

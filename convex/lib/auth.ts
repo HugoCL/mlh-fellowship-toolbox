@@ -5,7 +5,7 @@ import {
   isUmbrellaCohort,
   parentHasChildPods,
 } from "./cohortScope"
-import { getActiveImpersonationSession } from "./impersonation"
+import { getValidImpersonationSession } from "./impersonation"
 
 type Ctx = QueryCtx | MutationCtx
 
@@ -257,10 +257,25 @@ export async function requirePodManagementLeader(
   cohort: Doc<"cohorts">
   hasChildPods: boolean
 }> {
-  const membership = await requirePodLeader(ctx, cohortId, userId)
-  const cohort = await ctx.db.get("cohorts", cohortId)
-  if (!cohort) {
-    throw new Error("Cohort not found")
+  const cohortAccess = await resolveCohortAccess(ctx, cohortId, userId)
+  const cohort = cohortAccess.cohort
+
+  if (cohortAccess.kind === "umbrellaViewer") {
+    if (!cohort.parentCohortId) {
+      throw new Error("Pod activity management is only available inside a pod")
+    }
+    return {
+      membership: cohortAccess.membership,
+      cohort,
+      hasChildPods: false,
+    }
+  }
+
+  if (
+    cohortAccess.kind !== "member" ||
+    cohortAccess.membership.role !== "podLeader"
+  ) {
+    throw new Error("Pod leader or cohort admin access required")
   }
 
   const hasChildPods = isUmbrellaCohort(cohort)
@@ -273,7 +288,11 @@ export async function requirePodManagementLeader(
     )
   }
 
-  return { membership, cohort, hasChildPods }
+  return {
+    membership: cohortAccess.membership,
+    cohort,
+    hasChildPods,
+  }
 }
 
 export async function requireUmbrellaLeader(
@@ -302,7 +321,7 @@ export async function getFellowForUser(
   cohortId: Id<"cohorts">,
   userId: Id<"users">,
 ): Promise<Doc<"fellows"> | null> {
-  const session = await getActiveImpersonationSession(ctx, userId)
+  const session = await getValidImpersonationSession(ctx, userId)
   if (session && session.cohortId === cohortId) {
     const fellow = await ctx.db.get("fellows", session.fellowId)
     if (fellow) {

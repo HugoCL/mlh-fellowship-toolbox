@@ -3,7 +3,9 @@ import { resolveCohortAccess } from "./lib/auth"
 import { authedMutation, authedQuery, cohortQuery } from "./lib/customFunctions"
 import {
   assertCanImpersonateFellow,
+  deleteStaleImpersonationSession,
   getActiveImpersonationSession,
+  getValidImpersonationSession,
 } from "./lib/impersonation"
 import { cohortValidator, fellowValidator } from "./lib/validators"
 
@@ -20,7 +22,7 @@ export const getActiveImpersonation = authedQuery({
   args: {},
   returns: impersonationStateValidator,
   handler: async (ctx) => {
-    const session = await getActiveImpersonationSession(ctx, ctx.user._id)
+    const session = await getValidImpersonationSession(ctx, ctx.user._id)
     if (!session) {
       return null
     }
@@ -36,6 +38,14 @@ export const getActiveImpersonation = authedQuery({
       cohort,
       startedAt: session.startedAt,
     }
+  },
+})
+
+export const cleanupStaleImpersonation = authedMutation({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    return await deleteStaleImpersonationSession(ctx, ctx.user._id)
   },
 })
 
@@ -104,6 +114,7 @@ export const stopImpersonation = authedMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
+    await deleteStaleImpersonationSession(ctx, ctx.user._id)
     const session = await getActiveImpersonationSession(ctx, ctx.user._id)
     if (session) {
       await ctx.db.delete("impersonationSessions", session._id)
