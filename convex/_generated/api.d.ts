@@ -9,6 +9,7 @@
  */
 
 import type * as cohorts from "../cohorts.js";
+import type * as dashboard from "../dashboard.js";
 import type * as demoDays from "../demoDays.js";
 import type * as directory from "../directory.js";
 import type * as fellows from "../fellows.js";
@@ -24,6 +25,7 @@ import type * as lib_validators from "../lib/validators.js";
 import type * as lightningTalks from "../lightningTalks.js";
 import type * as mentors from "../mentors.js";
 import type * as oneOnOnes from "../oneOnOnes.js";
+import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
 import type {
@@ -34,6 +36,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   cohorts: typeof cohorts;
+  dashboard: typeof dashboard;
   demoDays: typeof demoDays;
   directory: typeof directory;
   fellows: typeof fellows;
@@ -49,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   lightningTalks: typeof lightningTalks;
   mentors: typeof mentors;
   oneOnOnes: typeof oneOnOnes;
+  seed: typeof seed;
   users: typeof users;
 }>;
 

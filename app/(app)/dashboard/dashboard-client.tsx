@@ -3,8 +3,11 @@
 import { useQuery } from "convex/react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { FellowDashboardPanel } from "@/components/app/dashboard/fellow-dashboard-panel"
+import { LeaderDashboardPanel } from "@/components/app/dashboard/leader-dashboard-panel"
+import { MentorDashboardPanel } from "@/components/app/dashboard/mentor-dashboard-panel"
+import { UmbrellaOverviewPanel } from "@/components/app/dashboard/umbrella-overview-panel"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
-import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -21,8 +24,6 @@ import {
   isUmbrellaAdminView,
 } from "@/lib/cohort-access"
 import { cohortPath } from "@/lib/cohort-routes"
-import { hasSchedulingLink } from "@/lib/scheduling-link"
-import { ProgressStat } from "@/lib/status"
 import { useWorkspacePod } from "@/lib/use-workspace-pod"
 
 export default function DashboardPageClient() {
@@ -62,22 +63,26 @@ export default function DashboardPageClient() {
       ? selectedPodId
       : activeCohort.cohort._id)
 
-  const summary = useQuery(
-    api.cohorts.getDashboardSummary,
+  const insights = useQuery(
+    api.dashboard.getDashboardInsights,
     viewingPodId && (!showUmbrellaAdminView || selectedPodId)
       ? { cohortId: viewingPodId }
       : "skip",
   )
 
+  const viewingPodProgramCode =
+    showUmbrellaAdminView && selectedPod
+      ? selectedPod.cohort.programCode
+      : (activeCohort?.cohort.programCode ?? "")
+
   if (cohorts === undefined) {
     return (
       <>
-        <PageHeader title="Dashboard" description="Loading cohort health…" />
+        <PageHeader title="Dashboard" description="Loading…" />
         <PageBody>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 rounded-lg" />
-            ))}
+          <div className="flex max-w-3xl flex-col gap-4">
+            <Skeleton className="h-32 rounded-lg" />
+            <Skeleton className="h-48 rounded-lg" />
           </div>
         </PageBody>
       </>
@@ -89,7 +94,7 @@ export default function DashboardPageClient() {
       <>
         <PageHeader
           title="Dashboard"
-          description="Track pod activity across your fellowship cohort."
+          description="Your fellowship home base."
         />
         <PageBody>
           <Empty>
@@ -102,7 +107,7 @@ export default function DashboardPageClient() {
             </EmptyHeader>
             <EmptyContent>
               <Button nativeButton={false} render={<Link href="/cohorts" />}>
-                Create Cohort
+                Create cohort
               </Button>
             </EmptyContent>
           </Empty>
@@ -124,28 +129,13 @@ export default function DashboardPageClient() {
     if (cohortDetails.canManagePod) {
       return `${activeCohort.cohort.programCode} · Pod leader`
     }
+    if (cohortDetails.role === "mentor") {
+      return `${activeCohort.cohort.programCode} · Mentor`
+    }
     return `${activeCohort.cohort.programCode} · Fellow`
   }
 
-  const viewingPodCohortId =
-    showUmbrellaAdminView && selectedPodId
-      ? selectedPodId
-      : activeCohort.cohort._id
-
-  const needsSchedulingLink =
-    cohortDetails &&
-    !showUmbrellaAdminView &&
-    ((cohortDetails.role === "fellow" &&
-      !hasSchedulingLink(cohortDetails.fellow?.calendlyUrl)) ||
-      (cohortDetails.role === "mentor" &&
-        !hasSchedulingLink(cohortDetails.mentor?.calendlyUrl)))
-
   if (showUmbrellaAdminView && !selectedPodId && !hasPods) {
-    const totalFellows = (groups ?? []).reduce(
-      (sum, group) => sum + group.fellowCount,
-      0,
-    )
-
     return (
       <>
         <PageHeader
@@ -153,110 +143,62 @@ export default function DashboardPageClient() {
           description={dashboardDescription()}
         />
         <PageBody>
-          <div className="flex max-w-2xl flex-col gap-6">
-            <p className="text-sm text-muted-foreground">
-              You manage this cohort umbrella. Pod leaders run fellows, mentors,
-              and activities inside their own pods — open Cohort Settings to
-              invite leaders and view pods.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-lg border border-border/70 bg-card/40 px-4 py-3">
-                <p className="text-sm font-medium">Pods</p>
-                <p className="font-heading text-3xl font-semibold tabular-nums">
-                  {groups?.length ?? 0}
-                </p>
-              </div>
-              <div className="rounded-lg border border-border/70 bg-card/40 px-4 py-3">
-                <p className="text-sm font-medium">Fellows across pods</p>
-                <p className="font-heading text-3xl font-semibold tabular-nums">
-                  {totalFellows}
-                </p>
-              </div>
-            </div>
-            <Button
-              nativeButton={false}
-                render={
-                  <Link
-                    href={cohortPath(
-                      activeCohort.cohort.programCode,
-                      "settings",
-                    )}
-                  />
-                }
-            >
-              Cohort Settings
-            </Button>
-          </div>
+          <UmbrellaOverviewPanel
+            umbrellaProgramCode={activeCohort.cohort.programCode}
+            groups={groups ?? []}
+          />
         </PageBody>
       </>
     )
   }
 
+  const headerCohort =
+    showUmbrellaAdminView && selectedPod
+      ? selectedPod.cohort
+      : activeCohort.cohort
+
   return (
     <>
       <PageHeader
-        title={cohortDisplayTitle(
-          showUmbrellaAdminView && selectedPod
-            ? selectedPod.cohort
-            : activeCohort.cohort,
-        )}
+        title={cohortDisplayTitle(headerCohort)}
         description={dashboardDescription()}
       />
       <PageBody>
-        {needsSchedulingLink &&
-        cohortDetails &&
-        (cohortDetails.role === "fellow" || cohortDetails.role === "mentor") ? (
-          <div className="mb-6 max-w-xl">
-            <SchedulingLinkSetup
-              key={
-                cohortDetails.role === "fellow"
-                  ? cohortDetails.fellow?.calendlyUrl
-                  : cohortDetails.mentor?.calendlyUrl
-              }
-              cohortId={viewingPodCohortId}
-              role={cohortDetails.role}
-              calendlyUrl={
-                cohortDetails.role === "fellow"
-                  ? cohortDetails.fellow?.calendlyUrl
-                  : cohortDetails.mentor?.calendlyUrl
-              }
-              variant="action"
-            />
+        {insights === undefined ? (
+          <div className="flex max-w-3xl flex-col gap-4">
+            <Skeleton className="h-32 rounded-lg" />
+            <Skeleton className="h-48 rounded-lg" />
           </div>
-        ) : null}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <ProgressStat
-            label="Peer 1:1s"
-            completed={summary?.peerCompleted ?? 0}
-            total={summary?.peerTotal ?? 0}
+        ) : insights.view === "leader" ? (
+          <LeaderDashboardPanel
+            fellowCount={insights.fellowCount}
+            mentorCount={insights.mentorCount}
+            directoryHref={cohortPath(viewingPodProgramCode, "directory")}
+            setupTasks={insights.setupTasks}
+            activityModules={insights.activityModules}
+            programStarted={insights.programStarted}
+            readOnly={Boolean(showUmbrellaAdminView && selectedPod)}
           />
-          <ProgressStat
-            label="Pod Leader 1:1s"
-            completed={summary?.leaderCompleted ?? 0}
-            total={summary?.leaderTotal ?? 0}
+        ) : insights.view === "fellow" ? (
+          <FellowDashboardPanel
+            cohortId={viewingPodId!}
+            programCode={viewingPodProgramCode}
+            needsCalendly={insights.needsCalendly}
+            calendlyUrl={cohortDetails?.fellow?.calendlyUrl}
+            actionItems={insights.actionItems}
+            completedCount={insights.completedCount}
+            totalCount={insights.totalCount}
           />
-          <ProgressStat
-            label="Mentor Meetings"
-            completed={summary?.mentorCompleted ?? 0}
-            total={summary?.mentorTotal ?? 0}
+        ) : (
+          <MentorDashboardPanel
+            cohortId={viewingPodId!}
+            programCode={viewingPodProgramCode}
+            needsCalendly={insights.needsCalendly}
+            calendlyUrl={cohortDetails?.mentor?.calendlyUrl}
+            pendingCount={insights.pendingCount}
+            assignments={insights.assignments}
           />
-          <ProgressStat
-            label="Demo Days"
-            completed={summary?.demoCompleted ?? 0}
-            total={summary?.demoTotal ?? 0}
-          />
-          <ProgressStat
-            label="Lightning Talks"
-            completed={summary?.lightningCompleted ?? 0}
-            total={summary?.lightningTotal ?? 0}
-          />
-          <div className="flex flex-col justify-center rounded-lg border border-border/70 bg-card/40 px-4 py-3">
-            <p className="text-sm font-medium">Fellows in pod</p>
-            <p className="font-heading text-3xl font-semibold tabular-nums">
-              {summary?.fellowCount ?? 0}
-            </p>
-          </div>
-        </div>
+        )}
       </PageBody>
     </>
   )

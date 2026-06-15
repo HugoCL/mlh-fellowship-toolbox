@@ -3,7 +3,6 @@
 import { useMutation, useQuery } from "convex/react"
 import { CopyIcon } from "lucide-react"
 import Link from "next/link"
-import { useCohortRoute } from "@/lib/use-cohort-route"
 import { useState } from "react"
 import { toast } from "sonner"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
@@ -32,6 +31,7 @@ import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
 import { inviteUrl } from "@/lib/invite-url"
+import { useCohortRoute } from "@/lib/use-cohort-route"
 
 export function CohortSettingsPage() {
   const { cohortId, cohortData, isLoading } = useCohortRoute()
@@ -68,10 +68,7 @@ export function CohortSettingsPage() {
   if (isLoading || cohortData === undefined) {
     return (
       <>
-        <PageHeader
-          title="Settings"
-          description="Loading cohort settings…"
-        />
+        <PageHeader title="Settings" description="Loading cohort settings…" />
         <PageBody>
           <p className="text-sm text-muted-foreground">Loading…</p>
         </PageBody>
@@ -82,10 +79,7 @@ export function CohortSettingsPage() {
   if (!cohortId) {
     return (
       <>
-        <PageHeader
-          title="Settings"
-          description="Cohort not found."
-        />
+        <PageHeader title="Settings" description="Cohort not found." />
         <PageBody>
           <Alert>
             <AlertDescription>
@@ -208,8 +202,8 @@ export function CohortSettingsPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   Create pods first, then invite a pod leader for each one (e.g.{" "}
                   {cohortData.cohort.programCode}.1,{" "}
-                  {cohortData.cohort.programCode}.2). Roster and program
-                  activities live at the pod level.
+                  {cohortData.cohort.programCode}.2). Fellows, mentors, and
+                  program activities live at the pod level.
                 </p>
               </div>
               <Button

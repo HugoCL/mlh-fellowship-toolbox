@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
+    "seed:pod": "convex run seed:seedPod --push",
+    "seed:fellows": "convex run seed:seedPod --push",
     "test": "vitest run",
     "test:watch": "vitest"
   },
