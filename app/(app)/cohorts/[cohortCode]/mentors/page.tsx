@@ -34,7 +34,7 @@ import {
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
-import { formatDate, formatWeekLabel } from "@/lib/dates"
+import { formatDate, formatWeekDateRange, formatWeekLabel } from "@/lib/dates"
 import { type OneOnOneStatus, StatusBadge } from "@/lib/status"
 import { useCohortRoute } from "@/lib/use-cohort-route"
 
@@ -249,6 +249,7 @@ export default function MentorsPage() {
         <ManageableWeekSlotList
           title="Mentor meeting weeks"
           description="Program weeks for mentor 1:1 rounds. Edit dates or remove weeks you do not need."
+          dateDisplay="weekRange"
           slots={(data.rounds ?? []).map((round) => ({
             id: round._id,
             label: round.targetWeekLabel,
@@ -461,7 +462,7 @@ export default function MentorsPage() {
           <p className="text-sm text-muted-foreground">
             Rounds:{" "}
             {(data.rounds ?? [])
-              .map((round) => formatDate(round.targetWeekStart))
+              .map((round) => formatWeekDateRange(round.targetWeekStart))
               .join(" · ")}
           </p>
         ) : null}
@@ -645,7 +646,7 @@ function FellowMentorMeetingsView({
                             <p className="text-sm text-muted-foreground">
                               {round?.targetWeekLabel ?? "Program round"}
                               {round
-                                ? ` · ${formatDate(round.targetWeekStart)}`
+                                ? ` · ${formatWeekDateRange(round.targetWeekStart)}`
                                 : null}
                             </p>
                           </div>

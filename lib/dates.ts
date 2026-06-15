@@ -1,4 +1,7 @@
 import { format, parseISO } from "date-fns"
+import { MS_PER_WEEK } from "./programWeeks"
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -16,6 +19,14 @@ const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
 
 export function formatDate(timestamp: number): string {
   return dateFormatter.format(new Date(timestamp))
+}
+
+export function getWeekEnd(weekStart: number): number {
+  return weekStart + MS_PER_WEEK - MS_PER_DAY
+}
+
+export function formatWeekDateRange(weekStart: number): string {
+  return `${formatDate(weekStart)} – ${formatDate(getWeekEnd(weekStart))}`
 }
 
 export function formatDateTime(timestamp: number): string {

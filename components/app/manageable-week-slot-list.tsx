@@ -39,7 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { formatDate, toDateInputValue } from "@/lib/dates"
+import { formatDate, formatWeekDateRange, toDateInputValue } from "@/lib/dates"
 
 export type ManageableWeekSlot = {
   id: string
@@ -52,6 +52,7 @@ type ManageableWeekSlotListProps = {
   description: string
   slots: ManageableWeekSlot[]
   showLabelField?: boolean
+  dateDisplay?: "single" | "weekRange"
   onUpdate: (
     id: string,
     values: { label?: string; date: number },
@@ -65,6 +66,7 @@ export function ManageableWeekSlotList({
   description,
   slots,
   showLabelField = true,
+  dateDisplay = "single",
   onUpdate,
   onDelete,
   deleteDescription = "This removes the slot. You can add it back manually or regenerate program weeks later.",
@@ -120,7 +122,7 @@ export function ManageableWeekSlotList({
               <TableHeader>
                 <TableRow>
                   {showLabelField ? <TableHead>Week</TableHead> : null}
-                  <TableHead>Date</TableHead>
+                  <TableHead>{dateDisplay === "weekRange" ? "Dates" : "Date"}</TableHead>
                   <TableHead className="w-24 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -130,7 +132,11 @@ export function ManageableWeekSlotList({
                     {showLabelField ? (
                       <TableCell className="font-medium">{slot.label}</TableCell>
                     ) : null}
-                    <TableCell>{formatDate(slot.date)}</TableCell>
+                    <TableCell>
+                      {dateDisplay === "weekRange"
+                        ? formatWeekDateRange(slot.date)
+                        : formatDate(slot.date)}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button
@@ -214,7 +220,9 @@ export function ManageableWeekSlotList({
               </Field>
             ) : null}
             <Field>
-              <FieldLabel htmlFor="edit-slot-date">Date</FieldLabel>
+              <FieldLabel htmlFor="edit-slot-date">
+                {dateDisplay === "weekRange" ? "Week start" : "Date"}
+              </FieldLabel>
               <Input
                 id="edit-slot-date"
                 type="date"

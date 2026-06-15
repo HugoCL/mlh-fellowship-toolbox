@@ -2,10 +2,12 @@ import { parseISO } from "date-fns"
 import { describe, expect, it } from "vitest"
 import {
   formatDate,
+  formatWeekDateRange,
   formatWeekLabel,
   toDateInputValue,
   toTimestamp,
 } from "./dates"
+import { MS_PER_WEEK } from "./programWeeks"
 
 describe("toTimestamp", () => {
   it("parses ISO date strings", () => {
@@ -34,5 +36,15 @@ describe("formatDate", () => {
     const formatted = formatDate(toTimestamp("2024-06-15"))
     expect(formatted.length).toBeGreaterThan(0)
     expect(formatted).toMatch(/2024/)
+  })
+})
+
+describe("formatWeekDateRange", () => {
+  it("formats a seven-day range from the week start", () => {
+    const weekStart = toTimestamp("2024-06-03")
+    const range = formatWeekDateRange(weekStart)
+    expect(range).toContain(formatDate(weekStart))
+    expect(range).toContain(formatDate(weekStart + MS_PER_WEEK - 24 * 60 * 60 * 1000))
+    expect(range).toContain("–")
   })
 })
