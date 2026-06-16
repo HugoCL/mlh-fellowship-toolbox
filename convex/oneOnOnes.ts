@@ -198,7 +198,10 @@ export const listPeerOneOnOnes = cohortQuery({
       .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
       .collect()
 
-    return { fellows, pairs }
+    return {
+      fellows: fellows.sort((a, b) => a.name.localeCompare(b.name)),
+      pairs,
+    }
   },
 })
 
@@ -242,7 +245,7 @@ export const listLeaderOneOnOnes = cohortQuery({
     }
 
     return {
-      fellows,
+      fellows: fellows.sort((a, b) => a.name.localeCompare(b.name)),
       instances: instances.sort((a, b) => a.sortOrder - b.sortOrder),
       records,
       podLeaderSchedulingLink,

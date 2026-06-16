@@ -268,13 +268,13 @@ export default function OneOnOnesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {fellows.map((rowFellow) => (
+                      {fellows.map((rowFellow, rowIndex) => (
                         <TableRow key={rowFellow._id} className="group">
                           <TableCell className="sticky left-0 z-10 bg-card font-medium group-hover:bg-muted/50">
                             {rowFellow.name}
                           </TableCell>
-                          {fellows.map((columnFellow) => {
-                            if (rowFellow._id === columnFellow._id) {
+                          {fellows.map((columnFellow, columnIndex) => {
+                            if (rowIndex === columnIndex) {
                               return (
                                 <TableCell
                                   key={columnFellow._id}
@@ -293,11 +293,7 @@ export default function OneOnOnesPage() {
                                   item.fellowBId === rowFellow._id),
                             )
 
-                            const isCanonicalCell =
-                              rowFellow._id < columnFellow._id
-                            const showPeerCell =
-                              pair &&
-                              (isCanonicalCell || myFellowId === rowFellow._id)
+                            const showPeerCell = pair && rowIndex < columnIndex
 
                             if (!showPeerCell) {
                               return (
