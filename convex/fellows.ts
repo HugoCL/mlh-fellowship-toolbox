@@ -5,6 +5,7 @@ import {
   cohortQuery,
   podManagementMutation,
 } from "./lib/customFunctions"
+import { ensureLeaderRecordsForFellow } from "./lib/leaderOneOnOnes"
 import { fellowValidator } from "./lib/validators"
 
 export const listFellows = cohortQuery({
@@ -60,6 +61,8 @@ export const addFellow = podManagementMutation({
       email: normalizedEmail,
       createdAt: Date.now(),
     })
+
+    await ensureLeaderRecordsForFellow(ctx, args.cohortId, fellowId)
 
     const token = crypto.randomUUID()
     await ctx.db.insert("invites", {

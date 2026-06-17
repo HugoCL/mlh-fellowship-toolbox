@@ -1,5 +1,6 @@
 import { v } from "convex/values"
 import { cohortQuery, directoryManagementMutation } from "./lib/customFunctions"
+import { ensureLeaderRecordsForFellow } from "./lib/leaderOneOnOnes"
 import {
   directoryInviteRoleValidator,
   inviteStatusValidator,
@@ -223,12 +224,14 @@ export const inviteDirectoryMember = directoryManagementMutation({
         throw new Error("A fellow with this email already exists in this pod")
       }
 
-      await ctx.db.insert("fellows", {
+      const fellowId = await ctx.db.insert("fellows", {
         cohortId: args.cohortId,
         name: trimmedName,
         email: normalizedEmail,
         createdAt: Date.now(),
       })
+
+      await ensureLeaderRecordsForFellow(ctx, args.cohortId, fellowId)
     } else {
       const existingMentor = await ctx.db
         .query("mentors")

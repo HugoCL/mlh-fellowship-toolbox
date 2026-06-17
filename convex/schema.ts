@@ -107,7 +107,12 @@ export default defineSchema({
   })
     .index("by_cohort", ["cohortId"])
     .index("by_fellow", ["fellowId"])
-    .index("by_instance", ["instanceId"]),
+    .index("by_instance", ["instanceId"])
+    .index("by_cohort_fellow_and_instance", [
+      "cohortId",
+      "fellowId",
+      "instanceId",
+    ]),
 
   mentors: defineTable({
     cohortId: v.id("cohorts"),

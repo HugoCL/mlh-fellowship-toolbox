@@ -6,6 +6,10 @@ import {
   requireFellowForUser,
 } from "./lib/auth"
 import {
+  getLeaderOneOnOneRecord,
+  validateLeaderOneOnOneRefs,
+} from "./lib/leaderOneOnOnes"
+import {
   cohortMutation,
   cohortQuery,
   podManagementMutation,
@@ -312,20 +316,6 @@ export const updateLeaderStatus = cohortMutation({
   },
   returns: leaderOneOnOneValidator,
   handler: async (ctx, args) => {
-    const records = await ctx.db
-      .query("leaderOneOnOnes")
-      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
-      .collect()
-
-    const record = records.find(
-      (item) =>
-        item.fellowId === args.fellowId && item.instanceId === args.instanceId,
-    )
-
-    if (!record) {
-      throw new Error("Leader 1:1 not found")
-    }
-
     if (ctx.membership.role === "fellow") {
       const fellow = await getFellowForUser(ctx, args.cohortId, ctx.user._id)
       if (!fellow || fellow._id !== args.fellowId) {
@@ -333,13 +323,44 @@ export const updateLeaderStatus = cohortMutation({
       }
     }
 
-    await ctx.db.patch("leaderOneOnOnes", record._id, {
+    const existing = await getLeaderOneOnOneRecord(
+      ctx,
+      args.cohortId,
+      args.fellowId,
+      args.instanceId,
+    )
+
+    if (!existing) {
+      await validateLeaderOneOnOneRefs(
+        ctx,
+        args.cohortId,
+        args.fellowId,
+        args.instanceId,
+      )
+
+      const recordId = await ctx.db.insert("leaderOneOnOnes", {
+        cohortId: args.cohortId,
+        fellowId: args.fellowId,
+        instanceId: args.instanceId,
+        status: args.status,
+        updatedAt: Date.now(),
+        updatedByUserId: ctx.user._id,
+      })
+
+      const created = await ctx.db.get("leaderOneOnOnes", recordId)
+      if (!created) {
+        throw new Error("Leader 1:1 not found")
+      }
+      return created
+    }
+
+    await ctx.db.patch("leaderOneOnOnes", existing._id, {
       status: args.status,
       updatedAt: Date.now(),
       updatedByUserId: ctx.user._id,
     })
 
-    const updated = await ctx.db.get("leaderOneOnOnes", record._id)
+    const updated = await ctx.db.get("leaderOneOnOnes", existing._id)
     if (!updated) {
       throw new Error("Leader 1:1 not found")
     }

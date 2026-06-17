@@ -8,6 +8,7 @@ import {
   getPodLeaderMembership,
   userLeadsGroupUnderParent,
 } from "./groups"
+import { ensureLeaderRecordsForFellow } from "./leaderOneOnOnes"
 
 export async function acceptInviteForUser(
   ctx: MutationCtx,
@@ -126,13 +127,14 @@ async function acceptFellowInvite(
   if (fellow && !fellow.userId) {
     await ctx.db.patch("fellows", fellow._id, { userId: user._id })
   } else if (!fellow) {
-    await ctx.db.insert("fellows", {
+    const fellowId = await ctx.db.insert("fellows", {
       cohortId: invite.cohortId,
       userId: user._id,
       name: user.name,
       email: normalizedEmail,
       createdAt: Date.now(),
     })
+    await ensureLeaderRecordsForFellow(ctx, invite.cohortId, fellowId)
   }
 
   await ctx.db.patch("invites", invite._id, { status: "accepted" })
