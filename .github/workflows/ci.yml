@@ -37,11 +37,38 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # Optional: E2E smoke (requires a running dev server + browser install).
-      # Enable in a follow-up if you add a preview deployment or local server step.
-      # - name: Install Playwright browsers (for qa-smoke)
-      #   run: pnpm exec playwright install --with-deps
-      # - name: Run qa smoke (example)
-      #   run: pnpm qa:smoke
-      #   env:
-      #     BASE_URL: http://localhost:3000
+  e2e:
+    runs-on: ubuntu-latest
+    needs: ci
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
+        env:
+          CI: true
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+          E2E_CLERK_ADMIN_EMAIL: hugo.castro+clerk_test@mlh.io
+          E2E_CLERK_FELLOW_EMAIL: hugo.castro.fellow-test+clerk_test@mlh.io
+          E2E_CLERK_TEST_CODE: "424242"
