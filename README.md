@@ -40,6 +40,26 @@ pnpm convex:dev
 pnpm dev
 ```
 
+6. Optional: enable browser push notifications
+
+Generate VAPID keys (per [Next.js PWA docs](https://nextjs.org/docs/app/guides/progressive-web-apps)):
+
+```bash
+pnpm dlx web-push generate-vapid-keys
+```
+
+Add to `.env.local`:
+
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — public key from the command above
+
+Add to the Convex dashboard (Settings → Environment Variables):
+
+- `VAPID_PUBLIC_KEY` — public key from the command above
+- `VAPID_PRIVATE_KEY` — private key from the command above
+- `VAPID_SUBJECT` — contact URI, e.g. `mailto:you@example.com`
+
+Fellows opt in from the pod **Notifications** page. Pod leaders send one-off or recurring notifications from the same page.
+
 ## Scripts
 
 - `pnpm dev` — Next.js dev server
@@ -95,6 +115,7 @@ pnpm test:e2e
 - Mentor meeting rounds with assignment generation
 - Demo day scheduling
 - Lightning talk enrollment
+- Pod notifications with browser push and recurring schedules
 
 ## Development notes
 

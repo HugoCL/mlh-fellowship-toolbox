@@ -3,6 +3,7 @@
 import { UserButton } from "@clerk/nextjs"
 import { useQuery } from "convex/react"
 import {
+  BellIcon,
   BookUserIcon,
   CalendarDaysIcon,
   ChevronLeftIcon,
@@ -326,6 +327,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           href: cohortPath(workspaceProgramCode, "action-items"),
           label: "Action Items",
           icon: ListTodoIcon,
+        },
+        {
+          href: cohortPath(workspaceProgramCode, "notifications"),
+          label: "Notifications",
+          icon: BellIcon,
         },
       ]
     : []

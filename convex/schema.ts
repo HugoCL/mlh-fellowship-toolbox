@@ -3,7 +3,10 @@ import { v } from "convex/values"
 import {
   cohortStatusValidator,
   inviteStatusValidator,
+  notificationStatusValidator,
   oneOnOneStatusValidator,
+  pushDeliveryStatusValidator,
+  recurrenceCadenceValidator,
   roleValidator,
 } from "./lib/validators"
 
@@ -210,4 +213,72 @@ export default defineSchema({
     cohortId: v.id("cohorts"),
     startedAt: v.number(),
   }).index("by_actor", ["actorUserId"]),
+
+  notificationSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    enabled: v.boolean(),
+    userAgent: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"])
+    .index("by_user_and_endpoint", ["userId", "endpoint"]),
+
+  notifications: defineTable({
+    cohortId: v.id("cohorts"),
+    title: v.string(),
+    body: v.string(),
+    linkUrl: v.optional(v.string()),
+    targetAllFellows: v.boolean(),
+    targetFellowIds: v.optional(v.array(v.id("fellows"))),
+    createdByUserId: v.id("users"),
+    createdAt: v.number(),
+    status: notificationStatusValidator,
+    recurringNotificationId: v.optional(v.id("recurringNotifications")),
+  })
+    .index("by_cohort", ["cohortId"])
+    .index("by_cohort_and_created", ["cohortId", "createdAt"])
+    .index("by_status", ["status"])
+    .index("by_recurring", ["recurringNotificationId"]),
+
+  notificationRecipients: defineTable({
+    notificationId: v.id("notifications"),
+    cohortId: v.id("cohorts"),
+    fellowId: v.id("fellows"),
+    userId: v.optional(v.id("users")),
+    readAt: v.optional(v.number()),
+    pushStatus: pushDeliveryStatusValidator,
+    pushSentAt: v.optional(v.number()),
+    pushError: v.optional(v.string()),
+  })
+    .index("by_notification", ["notificationId"])
+    .index("by_user", ["userId"])
+    .index("by_cohort_and_user", ["cohortId", "userId"])
+    .index("by_notification_and_fellow", ["notificationId", "fellowId"])
+    .index("by_push_status", ["pushStatus"]),
+
+  recurringNotifications: defineTable({
+    cohortId: v.id("cohorts"),
+    title: v.string(),
+    body: v.string(),
+    linkUrl: v.optional(v.string()),
+    targetAllFellows: v.boolean(),
+    targetFellowIds: v.optional(v.array(v.id("fellows"))),
+    cadence: recurrenceCadenceValidator,
+    weekdays: v.optional(v.array(v.number())),
+    dayOfMonth: v.optional(v.number()),
+    timeOfDayMinutes: v.number(),
+    nextRunAt: v.number(),
+    endAt: v.optional(v.number()),
+    enabled: v.boolean(),
+    createdByUserId: v.id("users"),
+    createdAt: v.number(),
+    lastRunAt: v.optional(v.number()),
+  })
+    .index("by_cohort", ["cohortId"])
+    .index("by_enabled_and_next_run", ["enabled", "nextRunAt"]),
 })

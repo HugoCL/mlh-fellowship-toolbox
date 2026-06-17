@@ -87,3 +87,85 @@ export const membershipValidator = v.object({
   role: roleValidator,
   joinedAt: v.number(),
 })
+
+export const notificationStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("sent"),
+  v.literal("partial"),
+  v.literal("failed"),
+)
+
+export const pushDeliveryStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("sent"),
+  v.literal("failed"),
+  v.literal("skipped"),
+)
+
+export const recurrenceCadenceValidator = v.union(
+  v.literal("daily"),
+  v.literal("weekly"),
+  v.literal("monthly"),
+)
+
+export const notificationSubscriptionValidator = v.object({
+  _id: v.id("notificationSubscriptions"),
+  _creationTime: v.number(),
+  userId: v.id("users"),
+  endpoint: v.string(),
+  p256dh: v.string(),
+  auth: v.string(),
+  enabled: v.boolean(),
+  userAgent: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
+
+export const notificationValidator = v.object({
+  _id: v.id("notifications"),
+  _creationTime: v.number(),
+  cohortId: v.id("cohorts"),
+  title: v.string(),
+  body: v.string(),
+  linkUrl: v.optional(v.string()),
+  targetAllFellows: v.boolean(),
+  targetFellowIds: v.optional(v.array(v.id("fellows"))),
+  createdByUserId: v.id("users"),
+  createdAt: v.number(),
+  status: notificationStatusValidator,
+  recurringNotificationId: v.optional(v.id("recurringNotifications")),
+})
+
+export const notificationRecipientValidator = v.object({
+  _id: v.id("notificationRecipients"),
+  _creationTime: v.number(),
+  notificationId: v.id("notifications"),
+  cohortId: v.id("cohorts"),
+  fellowId: v.id("fellows"),
+  userId: v.optional(v.id("users")),
+  readAt: v.optional(v.number()),
+  pushStatus: pushDeliveryStatusValidator,
+  pushSentAt: v.optional(v.number()),
+  pushError: v.optional(v.string()),
+})
+
+export const recurringNotificationValidator = v.object({
+  _id: v.id("recurringNotifications"),
+  _creationTime: v.number(),
+  cohortId: v.id("cohorts"),
+  title: v.string(),
+  body: v.string(),
+  linkUrl: v.optional(v.string()),
+  targetAllFellows: v.boolean(),
+  targetFellowIds: v.optional(v.array(v.id("fellows"))),
+  cadence: recurrenceCadenceValidator,
+  weekdays: v.optional(v.array(v.number())),
+  dayOfMonth: v.optional(v.number()),
+  timeOfDayMinutes: v.number(),
+  nextRunAt: v.number(),
+  endAt: v.optional(v.number()),
+  enabled: v.boolean(),
+  createdByUserId: v.id("users"),
+  createdAt: v.number(),
+  lastRunAt: v.optional(v.number()),
+})
