@@ -117,10 +117,14 @@ export const generateAllDemoDays = podManagementMutation({
         .collect()
     ).sort((a, b) => a.name.localeCompare(b.name))
 
-    const existingDemoDays = await ctx.db
-      .query("demoDays")
-      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
-      .collect()
+    const currentFellowIds = new Set(fellows.map((fellow) => fellow._id))
+
+    const existingDemoDays = (
+      await ctx.db
+        .query("demoDays")
+        .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
+        .collect()
+    ).filter((demoDay) => currentFellowIds.has(demoDay.fellowId))
 
     const assignedFellowIds = new Set(
       existingDemoDays.map((demoDay) => demoDay.fellowId),
@@ -152,6 +156,11 @@ export const generateAllDemoDays = podManagementMutation({
       }
 
       if (usedWeekStarts.has(week.weekStart)) {
+        if (fellows.length > programWeeks.length) {
+          throw new Error(
+            `This pod has ${fellows.length} fellows but only ${programWeeks.length} program weeks. Assign dates manually or adjust cohort dates.`,
+          )
+        }
         throw new Error(
           "All program weeks already have demo days assigned. Edit or remove existing dates first.",
         )
