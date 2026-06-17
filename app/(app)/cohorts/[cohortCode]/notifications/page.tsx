@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery } from "convex/react"
 import {
-  BellIcon,
   ExternalLinkIcon,
   PencilIcon,
   PlusIcon,
@@ -11,9 +10,9 @@ import {
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { BrowserNotificationsCard } from "@/components/app/browser-notifications-card"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
-import { PushNotificationToggle } from "@/components/app/push-notification-toggle"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import {
   AlertDialog,
@@ -181,6 +180,10 @@ export default function NotificationsPage() {
   const markAllNotificationsRead = useMutation(
     api.notifications.markAllNotificationsRead,
   )
+  const sendTestPushNotification = useMutation(
+    api.notifications.sendTestPushNotification,
+  )
+  const pushSubscription = useQuery(api.notifications.getMyPushSubscription, {})
 
   const [oneOffDialogOpen, setOneOffDialogOpen] = useState(false)
   const [recurringDialogOpen, setRecurringDialogOpen] = useState(false)
@@ -193,6 +196,7 @@ export default function NotificationsPage() {
     useState<RecurringFormState>(emptyRecurringForm)
   const [submitting, setSubmitting] = useState(false)
   const [markingAll, setMarkingAll] = useState(false)
+  const [sendingTest, setSendingTest] = useState(false)
 
   const showLeaderView =
     !isImpersonating && (cohort?.canManagePod || cohort?.isUmbrellaViewer)
@@ -373,6 +377,23 @@ export default function NotificationsPage() {
     }
   }
 
+  async function handleSendTestPush() {
+    if (!cohortId) return
+    setSendingTest(true)
+    try {
+      await sendTestPushNotification({ cohortId })
+      toast.success("Test notification sent. Check this browser or device.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to send test notification.",
+      )
+    } finally {
+      setSendingTest(false)
+    }
+  }
+
   async function handleMarkAllRead() {
     if (!cohortId) return
     setMarkingAll(true)
@@ -524,211 +545,221 @@ export default function NotificationsPage() {
       />
       <PageBody>
         {showLeaderView && data.view === "leader" ? (
-          <Tabs defaultValue="sent">
-            <PageToolbar title="Pod notifications">
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={() => setOneOffDialogOpen(true)}>
-                  <PlusIcon className="size-4" />
-                  Send now
+          <div className="flex flex-col gap-6">
+            <BrowserNotificationsCard
+              description="Turn on browser notifications on this device, then send yourself a test push before messaging fellows."
+              actions={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={sendingTest || !pushSubscription?.enabled}
+                  onClick={() => void handleSendTestPush()}
+                >
+                  {sendingTest ? "Sending…" : "Send test to me"}
                 </Button>
-                <Button variant="outline" onClick={openCreateRecurringDialog}>
-                  <PlusIcon className="size-4" />
-                  Add recurring
-                </Button>
-              </div>
-            </PageToolbar>
+              }
+            />
 
-            <TabsList>
-              <TabsTrigger value="sent">Sent</TabsTrigger>
-              <TabsTrigger value="recurring">Recurring</TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="sent">
+              <PageToolbar title="Pod notifications">
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => setOneOffDialogOpen(true)}>
+                    <PlusIcon className="size-4" />
+                    Send now
+                  </Button>
+                  <Button variant="outline" onClick={openCreateRecurringDialog}>
+                    <PlusIcon className="size-4" />
+                    Add recurring
+                  </Button>
+                </div>
+              </PageToolbar>
 
-            <TabsContent value="sent" className="mt-4">
-              {data.notifications.length === 0 ? (
-                <EmptyState
-                  title="No notifications yet"
-                  description="Send a one-off notification or set up a recurring schedule."
-                />
-              ) : (
-                <ul className="flex flex-col gap-4">
-                  {data.notifications.map(
-                    ({
-                      notification,
-                      recipientStats,
-                      readCount,
-                      targetCount,
-                    }) => (
-                      <li key={notification._id}>
+              <TabsList>
+                <TabsTrigger value="sent">Sent</TabsTrigger>
+                <TabsTrigger value="recurring">Recurring</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="sent" className="mt-4">
+                {data.notifications.length === 0 ? (
+                  <EmptyState
+                    title="No notifications yet"
+                    description="Send a one-off notification or set up a recurring schedule."
+                  />
+                ) : (
+                  <ul className="flex flex-col gap-4">
+                    {data.notifications.map(
+                      ({
+                        notification,
+                        recipientStats,
+                        readCount,
+                        targetCount,
+                      }) => (
+                        <li key={notification._id}>
+                          <Card>
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <CardTitle className="text-base">
+                                    {notification.title}
+                                  </CardTitle>
+                                  <p className="mt-1 text-sm text-muted-foreground">
+                                    Sent{" "}
+                                    {formatDateTime(notification.createdAt)} ·{" "}
+                                    {readCount}/{targetCount} read
+                                  </p>
+                                </div>
+                                <Badge variant="secondary">
+                                  {getStatusLabel(notification.status)}
+                                </Badge>
+                              </div>
+                              <p className="text-sm">{notification.body}</p>
+                              {notification.linkUrl ? (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto px-0"
+                                  nativeButton={false}
+                                  render={
+                                    <Link
+                                      href={notification.linkUrl}
+                                      target={
+                                        notification.linkUrl.startsWith("http")
+                                          ? "_blank"
+                                          : undefined
+                                      }
+                                    />
+                                  }
+                                >
+                                  Open link
+                                  <ExternalLinkIcon className="size-3.5" />
+                                </Button>
+                              ) : null}
+                            </CardHeader>
+                            <CardContent>
+                              <ul className="grid gap-2 sm:grid-cols-2">
+                                {recipientStats.map((status) => (
+                                  <li
+                                    key={status.fellowId}
+                                    className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
+                                  >
+                                    <span>{status.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline">
+                                        {status.pushStatus}
+                                      </Badge>
+                                      {status.readAt ? (
+                                        <span className="text-xs text-muted-foreground">
+                                          Read
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            </CardContent>
+                          </Card>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                )}
+              </TabsContent>
+
+              <TabsContent value="recurring" className="mt-4">
+                {data.recurring.length === 0 ? (
+                  <EmptyState
+                    title="No recurring notifications"
+                    description="Create a schedule to send reminders automatically."
+                  />
+                ) : (
+                  <ul className="flex flex-col gap-4">
+                    {data.recurring.map((item) => (
+                      <li key={item._id}>
                         <Card>
                           <CardHeader className="pb-3">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
                                 <CardTitle className="text-base">
-                                  {notification.title}
+                                  {item.title}
                                 </CardTitle>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                  Sent {formatDateTime(notification.createdAt)}{" "}
-                                  · {readCount}/{targetCount} read
+                                  {formatCadenceLabel(
+                                    item.cadence,
+                                    item.weekdays,
+                                  )}{" "}
+                                  at {minutesToTimeInput(item.timeOfDayMinutes)}{" "}
+                                  {PROGRAM_TIMEZONE_LABEL} · Next{" "}
+                                  {formatDateTime(item.nextRunAt)}
                                 </p>
                               </div>
-                              <Badge variant="secondary">
-                                {getStatusLabel(notification.status)}
-                              </Badge>
-                            </div>
-                            <p className="text-sm">{notification.body}</p>
-                            {notification.linkUrl ? (
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto px-0"
-                                nativeButton={false}
-                                render={
-                                  <Link
-                                    href={notification.linkUrl}
-                                    target={
-                                      notification.linkUrl.startsWith("http")
-                                        ? "_blank"
-                                        : undefined
-                                    }
-                                  />
-                                }
-                              >
-                                Open link
-                                <ExternalLinkIcon className="size-3.5" />
-                              </Button>
-                            ) : null}
-                          </CardHeader>
-                          <CardContent>
-                            <ul className="grid gap-2 sm:grid-cols-2">
-                              {recipientStats.map((status) => (
-                                <li
-                                  key={status.fellowId}
-                                  className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
-                                >
-                                  <span>{status.name}</span>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline">
-                                      {status.pushStatus}
-                                    </Badge>
-                                    {status.readAt ? (
-                                      <span className="text-xs text-muted-foreground">
-                                        Read
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          </CardContent>
-                        </Card>
-                      </li>
-                    ),
-                  )}
-                </ul>
-              )}
-            </TabsContent>
-
-            <TabsContent value="recurring" className="mt-4">
-              {data.recurring.length === 0 ? (
-                <EmptyState
-                  title="No recurring notifications"
-                  description="Create a schedule to send reminders automatically."
-                />
-              ) : (
-                <ul className="flex flex-col gap-4">
-                  {data.recurring.map((item) => (
-                    <li key={item._id}>
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <CardTitle className="text-base">
-                                {item.title}
-                              </CardTitle>
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                {formatCadenceLabel(
-                                  item.cadence,
-                                  item.weekdays,
-                                )}{" "}
-                                at {minutesToTimeInput(item.timeOfDayMinutes)}{" "}
-                                {PROGRAM_TIMEZONE_LABEL} · Next{" "}
-                                {formatDateTime(item.nextRunAt)}
-                              </p>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-1">
-                              <Badge
-                                variant={item.enabled ? "default" : "secondary"}
-                              >
-                                {item.enabled ? "Active" : "Paused"}
-                              </Badge>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={`Edit ${item.title}`}
-                                onClick={() => openEditRecurringDialog(item)}
-                              >
-                                <PencilIcon className="size-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger
-                                  render={
-                                    <Button
-                                      variant="ghost"
-                                      size="icon-sm"
-                                      aria-label={`Delete ${item.title}`}
-                                    />
+                              <div className="flex shrink-0 items-center gap-1">
+                                <Badge
+                                  variant={
+                                    item.enabled ? "default" : "secondary"
                                   }
                                 >
-                                  <Trash2Icon className="size-4 text-destructive" />
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Delete recurring notification?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Future scheduled sends will stop. Past
-                                      notifications stay in the sent list.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() =>
-                                        void handleDeleteRecurring(item._id)
-                                      }
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                  {item.enabled ? "Active" : "Paused"}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={`Edit ${item.title}`}
+                                  onClick={() => openEditRecurringDialog(item)}
+                                >
+                                  <PencilIcon className="size-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger
+                                    render={
+                                      <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        aria-label={`Delete ${item.title}`}
+                                      />
+                                    }
+                                  >
+                                    <Trash2Icon className="size-4 text-destructive" />
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Delete recurring notification?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Future scheduled sends will stop. Past
+                                        notifications stay in the sent list.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() =>
+                                          void handleDeleteRecurring(item._id)
+                                        }
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
                             </div>
-                          </div>
-                          <p className="text-sm">{item.body}</p>
-                        </CardHeader>
-                      </Card>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </TabsContent>
-          </Tabs>
+                            <p className="text-sm">{item.body}</p>
+                          </CardHeader>
+                        </Card>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
         ) : data.view === "fellow" ? (
           <div className="flex flex-col gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <BellIcon className="size-4" />
-                  Browser notifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PushNotificationToggle />
-              </CardContent>
-            </Card>
+            <BrowserNotificationsCard />
 
             <div className="flex items-center justify-between gap-3">
               <div>

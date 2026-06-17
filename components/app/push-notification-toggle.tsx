@@ -129,7 +129,14 @@ export function PushNotificationToggle({
   }
 
   if (loading) {
-    return null
+    if (compact) {
+      return null
+    }
+    return (
+      <p className="text-sm text-muted-foreground">
+        Checking browser notification support…
+      </p>
+    )
   }
 
   if (!supported) {

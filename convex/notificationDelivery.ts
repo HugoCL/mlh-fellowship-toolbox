@@ -19,6 +19,53 @@ type DeliverySummary = {
   skipped: number
 }
 
+async function sendPushPayloadToSubscriptions(
+  subscriptions: Doc<"notificationSubscriptions">[],
+  payload: string,
+): Promise<{
+  sent: number
+  failed: number
+  disableSubscriptionIds: Id<"notificationSubscriptions">[]
+}> {
+  const { subject, publicKey, privateKey } = getVapidConfig()
+  webpush.setVapidDetails(subject, publicKey, privateKey)
+
+  let sent = 0
+  let failed = 0
+  const disableSubscriptionIds: Id<"notificationSubscriptions">[] = []
+
+  for (const subscription of subscriptions) {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.p256dh,
+            auth: subscription.auth,
+          },
+        },
+        payload,
+      )
+      sent++
+    } catch (error) {
+      failed++
+      const statusCode =
+        typeof error === "object" &&
+        error !== null &&
+        "statusCode" in error &&
+        typeof error.statusCode === "number"
+          ? error.statusCode
+          : undefined
+
+      if (statusCode === 404 || statusCode === 410) {
+        disableSubscriptionIds.push(subscription._id)
+      }
+    }
+  }
+
+  return { sent, failed, disableSubscriptionIds }
+}
+
 function getVapidConfig() {
   const subject = process.env.VAPID_SUBJECT
   const publicKey =
@@ -33,6 +80,47 @@ function getVapidConfig() {
 
   return { subject, publicKey, privateKey }
 }
+
+export const sendTestPushToUser = internalAction({
+  args: {
+    userId: v.id("users"),
+    title: v.string(),
+    body: v.string(),
+    linkUrl: v.optional(v.string()),
+  },
+  returns: v.object({
+    sent: v.number(),
+    failed: v.number(),
+  }),
+  handler: async (ctx, args): Promise<{ sent: number; failed: number }> => {
+    const subscriptions: Doc<"notificationSubscriptions">[] =
+      await ctx.runQuery(
+        internal.notifications.getUserEnabledPushSubscriptions,
+        { userId: args.userId },
+      )
+
+    if (subscriptions.length === 0) {
+      return { sent: 0, failed: 0 }
+    }
+
+    const payload = JSON.stringify({
+      title: args.title,
+      body: args.body,
+      icon: "/icon.png",
+      url: args.linkUrl ?? "/",
+    })
+
+    try {
+      const result = await sendPushPayloadToSubscriptions(
+        subscriptions,
+        payload,
+      )
+      return { sent: result.sent, failed: result.failed }
+    } catch {
+      return { sent: 0, failed: subscriptions.length }
+    }
+  },
+})
 
 export const deliverNotification = internalAction({
   args: {

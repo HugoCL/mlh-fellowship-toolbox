@@ -26,6 +26,7 @@ import {
   validateRecurrenceFields,
   validateTargetFellows,
 } from "./lib/notificationHelpers"
+import { cohortWorkspacePath } from "./lib/programCode"
 import {
   fellowValidator,
   notificationRecipientValidator,
@@ -366,6 +367,36 @@ export const listNotifications = cohortQuery({
   },
 })
 
+export const sendTestPushNotification = podManagementMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+  },
+  returns: v.null(),
+  handler: async (ctx, _args) => {
+    const subscriptions = await ctx.db
+      .query("notificationSubscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
+      .collect()
+
+    if (!subscriptions.some((subscription) => subscription.enabled)) {
+      throw new Error("Turn on browser notifications before sending a test.")
+    }
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.notificationDelivery.sendTestPushToUser,
+      {
+        userId: ctx.user._id,
+        title: "Test notification",
+        body: "If you see this, pod push notifications are working.",
+        linkUrl: cohortWorkspacePath(ctx.cohort.programCode, "notifications"),
+      },
+    )
+
+    return null
+  },
+})
+
 export const createNotification = podManagementMutation({
   args: {
     cohortId: v.id("cohorts"),
@@ -683,6 +714,21 @@ export const markAllNotificationsRead = cohortMutation({
     }
 
     return updatedCount
+  },
+})
+
+export const getUserEnabledPushSubscriptions = internalQuery({
+  args: {
+    userId: v.id("users"),
+  },
+  returns: v.array(notificationSubscriptionValidator),
+  handler: async (ctx, args) => {
+    const subscriptions = await ctx.db
+      .query("notificationSubscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect()
+
+    return subscriptions.filter((subscription) => subscription.enabled)
   },
 })
 

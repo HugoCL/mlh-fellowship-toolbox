@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { BrowserNotificationsCard } from "@/components/app/browser-notifications-card"
 import { LabeledCheckbox } from "@/components/app/labeled-checkbox"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
@@ -127,19 +128,24 @@ export default function MyTasksPageClient() {
       />
       <PageBody>
         {cohortId && cohortDetails.fellow ? (
-          <SchedulingLinkSetup
-            key={cohortDetails.fellow.calendlyUrl}
-            fieldId="scheduling-link-fellow"
-            calendlyUrl={cohortDetails.fellow.calendlyUrl}
-            variant={
-              hasSchedulingLink(cohortDetails.fellow.calendlyUrl)
-                ? "default"
-                : "action"
-            }
-            onSave={async (url) => {
-              await updateFellowCalendly({ cohortId, calendlyUrl: url })
-            }}
-          />
+          <>
+            <BrowserNotificationsCard description="Turn on browser alerts for pod updates from your leader." />
+            <div className="mt-6">
+              <SchedulingLinkSetup
+                key={cohortDetails.fellow.calendlyUrl}
+                fieldId="scheduling-link-fellow"
+                calendlyUrl={cohortDetails.fellow.calendlyUrl}
+                variant={
+                  hasSchedulingLink(cohortDetails.fellow.calendlyUrl)
+                    ? "default"
+                    : "action"
+                }
+                onSave={async (url) => {
+                  await updateFellowCalendly({ cohortId, calendlyUrl: url })
+                }}
+              />
+            </div>
+          </>
         ) : null}
 
         <section className="flex flex-col gap-3">
