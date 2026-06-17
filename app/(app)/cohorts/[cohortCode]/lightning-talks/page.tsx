@@ -114,6 +114,12 @@ export default function LightningTalksPage() {
     (fellow) =>
       !registeredTalks.some((entry) => entry.talk.fellowId === fellow._id),
   )
+  const selectedSlotEntry = selectedSlot
+    ? slotMap.get(selectedSlot as Id<"lightningTalkSlots">)
+    : undefined
+  const assignFellowName = assignFellowId
+    ? fellowMap.get(assignFellowId as Id<"fellows">)?.name
+    : undefined
 
   if (isLoading || data === undefined) {
     return (
@@ -355,7 +361,11 @@ export default function LightningTalksPage() {
                   onValueChange={(value) => value && setSelectedSlot(value)}
                 >
                   <SelectTrigger id="enroll-slot">
-                    <SelectValue placeholder="Select date…" />
+                    <SelectValue placeholder="Select date…">
+                      {selectedSlotEntry
+                        ? formatDate(selectedSlotEntry.slotDate)
+                        : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -413,7 +423,9 @@ export default function LightningTalksPage() {
                   onValueChange={(value) => value && setAssignFellowId(value)}
                 >
                   <SelectTrigger id="assign-fellow">
-                    <SelectValue placeholder="Select fellow…" />
+                    <SelectValue placeholder="Select fellow…">
+                      {assignFellowName}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -433,7 +445,11 @@ export default function LightningTalksPage() {
                   onValueChange={(value) => value && setSelectedSlot(value)}
                 >
                   <SelectTrigger id="assign-slot">
-                    <SelectValue placeholder="Select slot…" />
+                    <SelectValue placeholder="Select slot…">
+                      {selectedSlotEntry
+                        ? formatDate(selectedSlotEntry.slotDate)
+                        : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>

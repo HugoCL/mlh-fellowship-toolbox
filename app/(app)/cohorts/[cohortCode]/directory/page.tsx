@@ -308,7 +308,9 @@ export default function DirectoryPage() {
                   }}
                 >
                   <SelectTrigger id="invite-role" className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {inviteRole === "fellow" ? "Fellow" : "Mentor"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>

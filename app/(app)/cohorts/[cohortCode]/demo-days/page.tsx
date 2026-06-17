@@ -192,7 +192,11 @@ export default function DemoDaysPage() {
                   onValueChange={(value) => value && setSelectedFellow(value)}
                 >
                   <SelectTrigger id="demo-fellow">
-                    <SelectValue placeholder="Select fellow…" />
+                    <SelectValue placeholder="Select fellow…">
+                      {(data?.fellows ?? []).find(
+                        (fellow) => fellow._id === selectedFellow,
+                      )?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
