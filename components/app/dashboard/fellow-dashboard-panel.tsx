@@ -1,5 +1,6 @@
 "use client"
 
+import { useMutation } from "convex/react"
 import {
   ArrowRightIcon,
   CheckCircle2Icon,
@@ -17,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { myTasksPath } from "@/lib/cohort-routes"
 import { cn } from "@/lib/utils"
@@ -74,6 +76,7 @@ export function FellowDashboardPanel({
   completedCount,
   totalCount,
 }: FellowDashboardPanelProps) {
+  const updateFellowCalendly = useMutation(api.fellows.updateMyCalendly)
   const progressPercent =
     totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100)
   const openItems = actionItems.filter((item) => item.status !== "done")
@@ -112,17 +115,19 @@ export function FellowDashboardPanel({
 
       {needsCalendly ? (
         <SchedulingLinkSetup
-          key={calendlyUrl}
-          cohortId={cohortId}
-          role="fellow"
+          key={`scheduling-${calendlyUrl ?? ""}`}
+          fieldId="scheduling-link-fellow"
           calendlyUrl={calendlyUrl}
           variant="action"
+          onSave={async (url) => {
+            await updateFellowCalendly({ cohortId, calendlyUrl: url })
+          }}
         />
       ) : null}
 
       {needsDiscord ? (
         <DiscordUsernameSetup
-          key={discordUsername}
+          key={`discord-${discordUsername ?? ""}`}
           discordUsername={discordUsername}
           variant="action"
         />

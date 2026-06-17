@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { chromium } from "playwright"
 
-const BASE = "http://localhost:3000"
+const BASE = process.env.BASE_URL ?? "http://localhost:3000"
 const OUT = path.join(process.cwd(), "qa-screenshots")
 
 const routes = [
@@ -89,6 +89,14 @@ async function main() {
     JSON.stringify(report, null, 2),
   )
   console.log(JSON.stringify(report, null, 2))
+
+  const failedRoutes = results.filter((entry) => entry.status !== "pass")
+  if (failedRoutes.length > 0) {
+    console.error(
+      `qa-smoke: ${failedRoutes.length} route(s) failed: ${failedRoutes.map((entry) => entry.route).join(", ")}`,
+    )
+    process.exit(1)
+  }
 }
 
 main().catch((err) => {

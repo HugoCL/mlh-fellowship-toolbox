@@ -7,6 +7,10 @@ import { FellowDashboardPanel } from "@/components/app/dashboard/fellow-dashboar
 import { LeaderDashboardPanel } from "@/components/app/dashboard/leader-dashboard-panel"
 import { MentorDashboardPanel } from "@/components/app/dashboard/mentor-dashboard-panel"
 import { UmbrellaOverviewPanel } from "@/components/app/dashboard/umbrella-overview-panel"
+import {
+  DashboardLoadingShell,
+  DashboardSkeleton,
+} from "@/components/app/dashboard-skeleton"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,7 +20,6 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { Skeleton } from "@/components/ui/skeleton"
 import { api } from "@/convex/_generated/api"
 import {
   cohortDisplayTitle,
@@ -98,17 +101,7 @@ export default function DashboardPageClient() {
       : (activeCohort?.cohort.programCode ?? "")
 
   if (cohorts === undefined) {
-    return (
-      <>
-        <PageHeader title="Dashboard" description="Loading…" />
-        <PageBody>
-          <div className="flex max-w-3xl flex-col gap-4">
-            <Skeleton className="h-32 rounded-lg" />
-            <Skeleton className="h-48 rounded-lg" />
-          </div>
-        </PageBody>
-      </>
-    )
+    return <DashboardLoadingShell />
   }
 
   if (!activeCohort) {
@@ -192,10 +185,7 @@ export default function DashboardPageClient() {
       />
       <PageBody>
         {insights === undefined ? (
-          <div className="flex max-w-3xl flex-col gap-4">
-            <Skeleton className="h-32 rounded-lg" />
-            <Skeleton className="h-48 rounded-lg" />
-          </div>
+          <DashboardSkeleton />
         ) : insights.view === "leader" ? (
           <LeaderDashboardPanel
             fellowCount={insights.fellowCount}

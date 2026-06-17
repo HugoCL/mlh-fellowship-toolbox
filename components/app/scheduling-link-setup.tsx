@@ -1,34 +1,26 @@
 "use client"
 
-import { useMutation } from "convex/react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
 
 type SchedulingLinkSetupProps = {
-  cohortId: Id<"cohorts">
-  role: "podLeader" | "fellow" | "mentor"
   calendlyUrl?: string | null
   variant?: "default" | "action"
+  fieldId?: string
+  onSave: (url: string) => Promise<void>
 }
 
 export function SchedulingLinkSetup({
-  cohortId,
-  role,
   calendlyUrl,
   variant = "default",
+  fieldId = "scheduling-link",
+  onSave,
 }: SchedulingLinkSetupProps) {
-  const updateFellowCalendly = useMutation(api.fellows.updateMyCalendly)
-  const updateMentorCalendly = useMutation(api.mentors.updateMyCalendly)
-  const updateLeaderSchedulingLink = useMutation(
-    api.users.updateMySchedulingLink,
-  )
   const [url, setUrl] = useState(calendlyUrl ?? "")
   const [isSaving, setIsSaving] = useState(false)
 
@@ -62,13 +54,7 @@ export function SchedulingLinkSetup({
           }
           setIsSaving(true)
           try {
-            if (role === "fellow") {
-              await updateFellowCalendly({ cohortId, calendlyUrl: trimmed })
-            } else if (role === "mentor") {
-              await updateMentorCalendly({ cohortId, calendlyUrl: trimmed })
-            } else {
-              await updateLeaderSchedulingLink({ calendlyUrl: trimmed })
-            }
+            await onSave(trimmed)
             toast.success("Scheduling link saved.")
           } catch (error) {
             toast.error(
@@ -83,11 +69,11 @@ export function SchedulingLinkSetup({
       >
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor={`scheduling-link-${role}`}>
+            <FieldLabel htmlFor={fieldId}>
               {missing ? "Your scheduling link" : "Update scheduling link"}
             </FieldLabel>
             <Input
-              id={`scheduling-link-${role}`}
+              id={fieldId}
               name="calendlyUrl"
               type="url"
               value={url}

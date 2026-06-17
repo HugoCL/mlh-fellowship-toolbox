@@ -16,7 +16,8 @@
     "seed:pod": "convex run seed:seedPod --push",
     "seed:fellows": "convex run seed:seedPod --push",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "qa:smoke": "node scripts/qa-smoke.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -44,6 +45,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "playwright": "^1.51.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.8"

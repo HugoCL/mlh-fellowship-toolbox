@@ -1,5 +1,6 @@
 "use client"
 
+import { useMutation } from "convex/react"
 import { ArrowRightIcon, CheckCircle2Icon, CircleIcon } from "lucide-react"
 import Link from "next/link"
 import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
@@ -12,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
 
@@ -44,6 +46,7 @@ export function MentorDashboardPanel({
   pendingCount,
   assignments,
 }: MentorDashboardPanelProps) {
+  const updateMentorCalendly = useMutation(api.mentors.updateMyCalendly)
   const openAssignments = assignments.filter(
     (assignment) => !assignment.completed,
   )
@@ -72,17 +75,19 @@ export function MentorDashboardPanel({
 
       {needsCalendly ? (
         <SchedulingLinkSetup
-          key={calendlyUrl}
-          cohortId={cohortId}
-          role="mentor"
+          key={`scheduling-${calendlyUrl ?? ""}`}
+          fieldId="scheduling-link-mentor"
           calendlyUrl={calendlyUrl}
           variant="action"
+          onSave={async (url) => {
+            await updateMentorCalendly({ cohortId, calendlyUrl: url })
+          }}
         />
       ) : null}
 
       {needsDiscord ? (
         <DiscordUsernameSetup
-          key={discordUsername}
+          key={`discord-${discordUsername ?? ""}`}
           discordUsername={discordUsername}
           variant="action"
         />

@@ -3,11 +3,10 @@
 import { useMutation, useQuery } from "convex/react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { toast } from "sonner"
+import { LabeledCheckbox } from "@/components/app/labeled-checkbox"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -63,6 +62,7 @@ export default function MyTasksPageClient() {
   const updateTalkCompletion = useMutation(
     api.lightningTalks.updateTalkCompletion,
   )
+  const updateFellowCalendly = useMutation(api.fellows.updateMyCalendly)
 
   const fellowMap = new Map(
     (fellows ?? []).map((fellow) => [fellow._id, fellow]),
@@ -129,14 +129,16 @@ export default function MyTasksPageClient() {
         {cohortId && cohortDetails.fellow ? (
           <SchedulingLinkSetup
             key={cohortDetails.fellow.calendlyUrl}
-            cohortId={cohortId}
-            role="fellow"
+            fieldId="scheduling-link-fellow"
             calendlyUrl={cohortDetails.fellow.calendlyUrl}
             variant={
               hasSchedulingLink(cohortDetails.fellow.calendlyUrl)
                 ? "default"
                 : "action"
             }
+            onSave={async (url) => {
+              await updateFellowCalendly({ cohortId, calendlyUrl: url })
+            }}
           />
         ) : null}
 
@@ -293,36 +295,34 @@ export default function MyTasksPageClient() {
                     ) : null}
                   </div>
                   <div className="flex gap-6">
-                    <label className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={assignment.scheduled}
-                        aria-label={`Scheduled with ${mentor?.name ?? "mentor"}`}
-                        onCheckedChange={(checked) => {
-                          if (!cohortId) return
-                          void updateAssignment({
-                            cohortId,
-                            assignmentId: assignment._id,
-                            scheduled: checked === true,
-                          })
-                        }}
-                      />
-                      Scheduled
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={assignment.completed}
-                        aria-label={`Completed with ${mentor?.name ?? "mentor"}`}
-                        onCheckedChange={(checked) => {
-                          if (!cohortId) return
-                          void updateAssignment({
-                            cohortId,
-                            assignmentId: assignment._id,
-                            completed: checked === true,
-                          })
-                        }}
-                      />
-                      Completed
-                    </label>
+                    <LabeledCheckbox
+                      id={`mentor-sched-${assignment._id}`}
+                      label="Scheduled"
+                      checked={assignment.scheduled}
+                      ariaLabel={`Scheduled with ${mentor?.name ?? "mentor"}`}
+                      onCheckedChange={(checked) => {
+                        if (!cohortId) return
+                        void updateAssignment({
+                          cohortId,
+                          assignmentId: assignment._id,
+                          scheduled: checked,
+                        })
+                      }}
+                    />
+                    <LabeledCheckbox
+                      id={`mentor-done-${assignment._id}`}
+                      label="Completed"
+                      checked={assignment.completed}
+                      ariaLabel={`Completed with ${mentor?.name ?? "mentor"}`}
+                      onCheckedChange={(checked) => {
+                        if (!cohortId) return
+                        void updateAssignment({
+                          cohortId,
+                          assignmentId: assignment._id,
+                          completed: checked,
+                        })
+                      }}
+                    />
                   </div>
                 </div>
               )
@@ -339,21 +339,21 @@ export default function MyTasksPageClient() {
                 : "No demo date assigned yet."}
             </p>
             {demoDay ? (
-              <label className="mt-4 flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={demoDay.completed}
-                  aria-label="Completed demo day"
-                  onCheckedChange={(checked) => {
-                    if (!cohortId) return
-                    void updateDemoCompletion({
-                      cohortId,
-                      demoDayId: demoDay._id,
-                      completed: checked === true,
-                    })
-                  }}
-                />
-                Completed demo
-              </label>
+              <LabeledCheckbox
+                id="demo-completed"
+                label="Completed demo"
+                className="mt-4 flex items-center gap-2 text-sm"
+                checked={demoDay.completed}
+                ariaLabel="Completed demo day"
+                onCheckedChange={(checked) => {
+                  if (!cohortId) return
+                  void updateDemoCompletion({
+                    cohortId,
+                    demoDayId: demoDay._id,
+                    completed: checked,
+                  })
+                }}
+              />
             ) : null}
           </div>
 
@@ -362,21 +362,21 @@ export default function MyTasksPageClient() {
             {lightningTalk ? (
               <>
                 <p className="mt-2 text-sm">{lightningTalk.topic}</p>
-                <label className="mt-4 flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={lightningTalk.completed}
-                    aria-label="Completed lightning talk"
-                    onCheckedChange={(checked) => {
-                      if (!cohortId) return
-                      void updateTalkCompletion({
-                        cohortId,
-                        talkId: lightningTalk._id,
-                        completed: checked === true,
-                      })
-                    }}
-                  />
-                  Completed talk
-                </label>
+                <LabeledCheckbox
+                  id="talk-completed"
+                  label="Completed talk"
+                  className="mt-4 flex items-center gap-2 text-sm"
+                  checked={lightningTalk.completed}
+                  ariaLabel="Completed lightning talk"
+                  onCheckedChange={(checked) => {
+                    if (!cohortId) return
+                    void updateTalkCompletion({
+                      cohortId,
+                      talkId: lightningTalk._id,
+                      completed: checked,
+                    })
+                  }}
+                />
               </>
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">

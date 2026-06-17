@@ -83,6 +83,11 @@ export default function DirectoryPage() {
     cohortId ? { cohortId } : "skip",
   )
   const inviteMember = useMutation(api.directory.inviteDirectoryMember)
+  const updateFellowCalendly = useMutation(api.fellows.updateMyCalendly)
+  const updateMentorCalendly = useMutation(api.mentors.updateMyCalendly)
+  const updateLeaderSchedulingLink = useMutation(
+    api.users.updateMySchedulingLink,
+  )
 
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
   const [inviteRole, setInviteRole] = useState<"fellow" | "mentor">("fellow")
@@ -177,16 +182,30 @@ export default function DirectoryPage() {
               <div className="flex flex-col gap-4">
                 {needsOwnSchedulingLink ? (
                   <SchedulingLinkSetup
-                    key={cohortData.calendlyUrl}
-                    cohortId={cohortId}
-                    role={cohortData.role}
+                    key={`scheduling-${cohortData.calendlyUrl ?? ""}`}
+                    fieldId={`scheduling-link-${cohortData.role}`}
                     calendlyUrl={cohortData.calendlyUrl}
                     variant="action"
+                    onSave={async (url) => {
+                      if (cohortData.role === "fellow") {
+                        await updateFellowCalendly({
+                          cohortId,
+                          calendlyUrl: url,
+                        })
+                      } else if (cohortData.role === "mentor") {
+                        await updateMentorCalendly({
+                          cohortId,
+                          calendlyUrl: url,
+                        })
+                      } else {
+                        await updateLeaderSchedulingLink({ calendlyUrl: url })
+                      }
+                    }}
                   />
                 ) : null}
                 {needsOwnDiscordUsername ? (
                   <DiscordUsernameSetup
-                    key={cohortData.discordUsername}
+                    key={`discord-${cohortData.discordUsername ?? ""}`}
                     discordUsername={cohortData.discordUsername}
                     variant="action"
                   />

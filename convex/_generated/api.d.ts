@@ -27,6 +27,7 @@ import type * as lib_dates from "../lib/dates.js";
 import type * as lib_groups from "../lib/groups.js";
 import type * as lib_impersonation from "../lib/impersonation.js";
 import type * as lib_inviteAcceptance from "../lib/inviteAcceptance.js";
+import type * as lib_leaderOneOnOnes from "../lib/leaderOneOnOnes.js";
 import type * as lib_migrateProgramDates from "../lib/migrateProgramDates.js";
 import type * as lib_programCode from "../lib/programCode.js";
 import type * as lib_programWeeks from "../lib/programWeeks.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   "lib/groups": typeof lib_groups;
   "lib/impersonation": typeof lib_impersonation;
   "lib/inviteAcceptance": typeof lib_inviteAcceptance;
+  "lib/leaderOneOnOnes": typeof lib_leaderOneOnOnes;
   "lib/migrateProgramDates": typeof lib_migrateProgramDates;
   "lib/programCode": typeof lib_programCode;
   "lib/programWeeks": typeof lib_programWeeks;
