@@ -6,11 +6,11 @@ import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
-import { MentorProfileEditDialog } from "@/components/app/mentor-profile-edit-dialog"
 import {
   ManageableWeekSlotList,
   runGenerateAllWeeks,
 } from "@/components/app/manageable-week-slot-list"
+import { MentorProfileEditDialog } from "@/components/app/mentor-profile-edit-dialog"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Button } from "@/components/ui/button"
@@ -85,8 +85,9 @@ export default function MentorsPage() {
 
   const [weekLabel, setWeekLabel] = useState("")
   const [weekStart, setWeekStart] = useState("")
-  const [editingMentorId, setEditingMentorId] =
-    useState<Id<"mentors"> | null>(null)
+  const [editingMentorId, setEditingMentorId] = useState<Id<"mentors"> | null>(
+    null,
+  )
 
   const isUmbrellaAdminBlocked =
     cohort?.role === "podLeader" &&

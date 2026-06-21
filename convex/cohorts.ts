@@ -134,9 +134,7 @@ async function buildCohortDetails(
   const user = await ctx.db.get("users", ctx.user._id)
   const discordUsername =
     ctx.membership.role === "mentor" && mentor
-      ? mentor.discordUsername?.trim() ||
-        user?.discordUsername?.trim() ||
-        null
+      ? mentor.discordUsername?.trim() || user?.discordUsername?.trim() || null
       : user?.discordUsername?.trim() || null
 
   return {
