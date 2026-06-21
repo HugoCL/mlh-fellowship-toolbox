@@ -110,7 +110,9 @@ When adding shadcn components, use the **Base UI** registry/preset for this repo
 - People/Directory should use a card layout with Clerk avatars (initials fallback), not a table.
 - Use Biome for lint/format (`pnpm lint`); do not add ESLint to this project.
 - Exclude `components/ui` from Biome checks (generated shadcn wrappers).
-- Week-based scheduling (mentor rounds, lightning talks, demo days) should offer bulk "Generate All Weeks" from cohort dates while keeping manual add plus per-slot edit/delete.
+- Week-based scheduling (mentor rounds, lightning talks, demo days) should offer bulk "Generate All Weeks" from cohort dates while keeping manual add plus per-slot edit/delete; lightning talks should prompt pod leaders for the weekday before autogenerating.
+- Always account for timezones when inputting and displaying times; Eastern Time (ET) is the program standard.
+- Prefer per-feature bulk actions over combined cross-feature admin buttons.
 
 ## Learned Workspace Facts
 
@@ -124,3 +126,6 @@ When adding shadcn components, use the **Base UI** registry/preset for this repo
 - Dev seed: `pnpm seed:pod` runs `convex/seed.ts` to idempotently add fellows, mentors, 1:1 matrices, and mentor assignments to a pod.
 - App access is invite-gated: the first user becomes platform admin (`isPlatformAdmin`); later users need a pending invite or cohort membership or see the not-invited screen (`convex/lib/appAccess.ts`, `NotInvitedScreen`).
 - Program weeks are derived from cohort `startDate`/`endDate` via `getProgramWeeks` in `convex/lib/programWeeks.ts` (re-exported from `lib/programWeeks.ts` for tests).
+- Program timezone is `America/New_York` (ET); date/time helpers live in `convex/lib/dates.ts` and use `@internationalized/date`.
+- Mentor week slots display a date range (week start–end), not a single day.
+- Demo days use one date per demo (no spreading across weekdays). Auto-generate assigns one fellow per program week first; when fellows exceed weeks, overflow fellows share an already-assigned date (multiple demos same day) or leaders assign dates manually.

@@ -144,32 +144,27 @@ export const generateAllDemoDays = podManagementMutation({
         continue
       }
 
-      let week = programWeeks[weekIndex % programWeeks.length]
-      let guard = 0
-      while (
-        usedWeekStarts.has(week.weekStart) &&
-        guard < programWeeks.length
-      ) {
-        weekIndex += 1
-        week = programWeeks[weekIndex % programWeeks.length]
-        guard += 1
+      let demoDate: number | undefined
+      for (let offset = 0; offset < programWeeks.length; offset += 1) {
+        const week = programWeeks[(weekIndex + offset) % programWeeks.length]
+        if (!usedWeekStarts.has(week.weekStart)) {
+          demoDate = week.weekStart
+          usedWeekStarts.add(week.weekStart)
+          weekIndex = (weekIndex + offset + 1) % programWeeks.length
+          break
+        }
       }
 
-      if (usedWeekStarts.has(week.weekStart)) {
-        if (fellows.length > programWeeks.length) {
-          throw new Error(
-            `This pod has ${fellows.length} fellows but only ${programWeeks.length} program weeks. Assign dates manually or adjust cohort dates.`,
-          )
-        }
-        throw new Error(
-          "All program weeks already have demo days assigned. Edit or remove existing dates first.",
-        )
+      if (demoDate === undefined) {
+        const week = programWeeks[weekIndex % programWeeks.length]
+        demoDate = week.weekStart
+        weekIndex += 1
       }
 
       const demoDayId = await ctx.db.insert("demoDays", {
         cohortId: args.cohortId,
         fellowId: fellow._id,
-        demoDate: week.weekStart,
+        demoDate,
         completed: false,
         updatedAt: now,
         updatedByUserId: ctx.user._id,
@@ -178,9 +173,7 @@ export const generateAllDemoDays = podManagementMutation({
       if (inserted) {
         existingDemoDays.push(inserted)
       }
-      usedWeekStarts.add(week.weekStart)
       assignedFellowIds.add(fellow._id)
-      weekIndex += 1
       created += 1
     }
 
