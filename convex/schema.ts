@@ -123,6 +123,7 @@ export default defineSchema({
     name: v.string(),
     email: v.optional(v.string()),
     calendlyUrl: v.string(),
+    discordUsername: v.optional(v.string()),
     active: v.boolean(),
     createdAt: v.number(),
   })

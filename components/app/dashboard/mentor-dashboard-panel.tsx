@@ -47,6 +47,9 @@ export function MentorDashboardPanel({
   assignments,
 }: MentorDashboardPanelProps) {
   const updateMentorCalendly = useMutation(api.mentors.updateMyCalendly)
+  const updateMentorDiscordUsername = useMutation(
+    api.mentors.updateMyDiscordUsername,
+  )
   const openAssignments = assignments.filter(
     (assignment) => !assignment.completed,
   )
@@ -90,6 +93,12 @@ export function MentorDashboardPanel({
           key={`discord-${discordUsername ?? ""}`}
           discordUsername={discordUsername}
           variant="action"
+          onSave={async (username) => {
+            await updateMentorDiscordUsername({
+              cohortId,
+              discordUsername: username,
+            })
+          }}
         />
       ) : null}
 

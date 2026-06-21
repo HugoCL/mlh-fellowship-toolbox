@@ -13,11 +13,15 @@ import { hasDiscordUsername } from "@/lib/discord-username"
 type DiscordUsernameSetupProps = {
   discordUsername?: string | null
   variant?: "default" | "action"
+  fieldId?: string
+  onSave?: (discordUsername: string) => Promise<void>
 }
 
 export function DiscordUsernameSetup({
   discordUsername,
   variant = "default",
+  fieldId = "discord-username",
+  onSave,
 }: DiscordUsernameSetupProps) {
   const updateDiscordUsername = useMutation(api.users.updateMyDiscordUsername)
   const [username, setUsername] = useState(discordUsername ?? "")
@@ -52,7 +56,11 @@ export function DiscordUsernameSetup({
           }
           setIsSaving(true)
           try {
-            await updateDiscordUsername({ discordUsername: trimmed })
+            if (onSave) {
+              await onSave(trimmed)
+            } else {
+              await updateDiscordUsername({ discordUsername: trimmed })
+            }
             toast.success("Discord username saved.")
           } catch (error) {
             toast.error(
@@ -67,11 +75,11 @@ export function DiscordUsernameSetup({
       >
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="discord-username">
+            <FieldLabel htmlFor={fieldId}>
               {missing ? "Your Discord username" : "Update Discord username"}
             </FieldLabel>
             <Input
-              id="discord-username"
+              id={fieldId}
               name="discordUsername"
               type="text"
               value={username}

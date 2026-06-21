@@ -1,11 +1,12 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import { ExternalLink, Info } from "lucide-react"
+import { ExternalLink, Info, PencilIcon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
+import { MentorProfileEditDialog } from "@/components/app/mentor-profile-edit-dialog"
 import {
   ManageableWeekSlotList,
   runGenerateAllWeeks,
@@ -80,9 +81,12 @@ export default function MentorsPage() {
   const deleteRound = useMutation(api.mentors.deleteRound)
   const generateAssignments = useMutation(api.mentors.generateAssignments)
   const updateAssignment = useMutation(api.mentors.updateAssignment)
+  const updateMentorProfile = useMutation(api.mentors.updateMentorProfile)
 
   const [weekLabel, setWeekLabel] = useState("")
   const [weekStart, setWeekStart] = useState("")
+  const [editingMentorId, setEditingMentorId] =
+    useState<Id<"mentors"> | null>(null)
 
   const isUmbrellaAdminBlocked =
     cohort?.role === "podLeader" &&
@@ -158,6 +162,9 @@ export default function MentorsPage() {
   const mentorMap = new Map(
     (data.mentors ?? []).map((mentor) => [mentor._id, mentor]),
   )
+  const editingMentor = editingMentorId
+    ? mentorMap.get(editingMentorId)
+    : undefined
 
   return (
     <>
@@ -280,39 +287,74 @@ export default function MentorsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Mentor scheduling links</CardTitle>
+            <CardTitle className="text-base">Mentor profiles</CardTitle>
+            <CardDescription>
+              Scheduling links and Discord usernames for fellows to reach
+              mentors.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {(data.mentors ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No mentors added yet. Add mentors in Cohort Settings.
+                No mentors added yet. Add mentors in the Directory.
               </p>
             ) : (
-              <ul className="flex flex-col gap-2 text-sm">
+              <ul className="flex flex-col gap-3 text-sm">
                 {(data.mentors ?? []).map((mentor) => (
                   <li
                     key={mentor._id}
-                    className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-2 rounded-lg border border-border/70 p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <span>{mentor.name}</span>
-                    {mentor.calendlyUrl ? (
-                      <a
-                        href={mentor.calendlyUrl}
-                        className="truncate text-primary underline-offset-4 hover:underline"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Open scheduling link
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">No link yet</span>
-                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium">{mentor.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {mentor.calendlyUrl
+                          ? "Scheduling link set"
+                          : "Scheduling link missing"}
+                        {" · "}
+                        {mentor.discordUsername
+                          ? `@${mentor.discordUsername.replace(/^@+/, "")}`
+                          : "Discord not set"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="self-start sm:self-center"
+                      onClick={() => setEditingMentorId(mentor._id)}
+                    >
+                      <PencilIcon data-icon="inline-start" />
+                      Edit profile
+                    </Button>
                   </li>
                 ))}
               </ul>
             )}
           </CardContent>
         </Card>
+
+        {editingMentor ? (
+          <MentorProfileEditDialog
+            open={editingMentor != null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setEditingMentorId(null)
+              }
+            }}
+            mentorName={editingMentor.name}
+            calendlyUrl={editingMentor.calendlyUrl.trim() || null}
+            discordUsername={editingMentor.discordUsername?.trim() || null}
+            onSave={async (values) => {
+              await updateMentorProfile({
+                cohortId,
+                mentorId: editingMentor._id,
+                calendlyUrl: values.calendlyUrl,
+                discordUsername: values.discordUsername,
+              })
+            }}
+          />
+        ) : null}
 
         {(data.fellows ?? []).length === 0 ? (
           <EmptyState

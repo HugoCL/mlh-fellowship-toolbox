@@ -126,7 +126,10 @@ export const getDirectory = cohortQuery({
         email: mentor.email ?? null,
         role: "mentor",
         calendlyUrl: mentor.calendlyUrl.trim() || null,
-        discordUsername: mentorUser?.discordUsername?.trim() || null,
+        discordUsername:
+          mentor.discordUsername?.trim() ||
+          mentorUser?.discordUsername?.trim() ||
+          null,
         imageUrl: mentorUser?.imageUrl ?? null,
         joined: Boolean(mentor.userId),
         pendingInvite: !mentor.userId && Boolean(mentor.email),

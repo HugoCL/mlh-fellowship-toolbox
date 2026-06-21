@@ -323,6 +323,23 @@ async function buildLeaderDashboard(
     })
   }
 
+  const mentorsMissingProfile = activeMentors.filter(
+    (mentor) =>
+      !hasSchedulingLink(mentor.calendlyUrl) ||
+      !hasDiscordUsername(mentor.discordUsername),
+  ).length
+
+  if (mentorsMissingProfile > 0) {
+    setupTasks.push({
+      id: "missing-mentor-profile",
+      title: `${mentorsMissingProfile} mentor${mentorsMissingProfile === 1 ? "" : "s"} missing contact info`,
+      description:
+        "Add scheduling links and Discord usernames so fellows can reach mentors.",
+      href: `${basePath}/directory`,
+      priority: "medium",
+    })
+  }
+
   const activityModules: Array<{
     id: string
     label: string
@@ -706,7 +723,9 @@ async function buildMentorDashboard(
   const mentor = await getMentorForUser(ctx, cohortId, ctx.user._id)
   const user = await ctx.db.get("users", ctx.user._id)
   const needsCalendly = mentor ? !hasSchedulingLink(mentor.calendlyUrl) : false
-  const needsDiscord = !hasDiscordUsername(user?.discordUsername)
+  const needsDiscord = mentor
+    ? !hasDiscordUsername(mentor.discordUsername ?? user?.discordUsername)
+    : !hasDiscordUsername(user?.discordUsername)
 
   if (!mentor) {
     return {

@@ -6,12 +6,14 @@ import {
   CopyIcon,
   HashIcon,
   MailIcon,
+  PencilIcon,
   UserPlusIcon,
 } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
+import { MentorProfileEditDialog } from "@/components/app/mentor-profile-edit-dialog"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -85,8 +87,16 @@ export default function DirectoryPage() {
   const inviteMember = useMutation(api.directory.inviteDirectoryMember)
   const updateFellowCalendly = useMutation(api.fellows.updateMyCalendly)
   const updateMentorCalendly = useMutation(api.mentors.updateMyCalendly)
+  const updateMentorDiscordUsername = useMutation(
+    api.mentors.updateMyDiscordUsername,
+  )
+  const updateMentorProfile = useMutation(api.mentors.updateMentorProfile)
   const updateLeaderSchedulingLink = useMutation(
     api.users.updateMySchedulingLink,
+  )
+
+  const [editingMentor, setEditingMentor] = useState<DirectoryPerson | null>(
+    null,
   )
 
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -208,16 +218,52 @@ export default function DirectoryPage() {
                     key={`discord-${cohortData.discordUsername ?? ""}`}
                     discordUsername={cohortData.discordUsername}
                     variant="action"
+                    onSave={
+                      cohortData.role === "mentor"
+                        ? async (discordUsername) => {
+                            await updateMentorDiscordUsername({
+                              cohortId,
+                              discordUsername,
+                            })
+                          }
+                        : undefined
+                    }
                   />
                 ) : null}
               </div>
             </section>
           ) : null}
 
-          <DirectoryGrid people={directory.people} />
+          <DirectoryGrid
+            people={directory.people}
+            canManageMentors={canInvite}
+            onEditMentor={setEditingMentor}
+          />
 
           {canInvite && directory.pendingInvites.length > 0 ? (
             <PendingInvitesList invites={directory.pendingInvites} />
+          ) : null}
+
+          {editingMentor && cohortId ? (
+            <MentorProfileEditDialog
+              open={editingMentor != null}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setEditingMentor(null)
+                }
+              }}
+              mentorName={editingMentor.name}
+              calendlyUrl={editingMentor.calendlyUrl}
+              discordUsername={editingMentor.discordUsername}
+              onSave={async (values) => {
+                await updateMentorProfile({
+                  cohortId,
+                  mentorId: editingMentor._id as Id<"mentors">,
+                  calendlyUrl: values.calendlyUrl,
+                  discordUsername: values.discordUsername,
+                })
+              }}
+            />
           ) : null}
         </div>
       </PageBody>
@@ -419,7 +465,15 @@ type DirectoryPerson = {
   pendingInvite: boolean
 }
 
-function DirectoryGrid({ people }: { people: Array<DirectoryPerson> }) {
+function DirectoryGrid({
+  people,
+  canManageMentors,
+  onEditMentor,
+}: {
+  people: Array<DirectoryPerson>
+  canManageMentors: boolean
+  onEditMentor: (person: DirectoryPerson) => void
+}) {
   return (
     <section className="flex w-full flex-col gap-4">
       <div>
@@ -432,7 +486,12 @@ function DirectoryGrid({ people }: { people: Array<DirectoryPerson> }) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {people.map((person) => (
-            <DirectoryCard key={person._id} person={person} />
+            <DirectoryCard
+              key={person._id}
+              person={person}
+              canManageMentors={canManageMentors}
+              onEditMentor={onEditMentor}
+            />
           ))}
         </div>
       )}
@@ -440,7 +499,17 @@ function DirectoryGrid({ people }: { people: Array<DirectoryPerson> }) {
   )
 }
 
-function DirectoryCard({ person }: { person: DirectoryPerson }) {
+function DirectoryCard({
+  person,
+  canManageMentors,
+  onEditMentor,
+}: {
+  person: DirectoryPerson
+  canManageMentors: boolean
+  onEditMentor: (person: DirectoryPerson) => void
+}) {
+  const showEditMentor = canManageMentors && person.role === "mentor"
+
   return (
     <Card className="gap-0 p-5 transition-shadow hover:ring-foreground/20 hover:shadow-sm">
       <div className="flex items-start gap-4">
@@ -453,9 +522,22 @@ function DirectoryCard({ person }: { person: DirectoryPerson }) {
           </AvatarFallback>
         </Avatar>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <p className="truncate font-heading text-sm font-semibold leading-tight">
-            {person.name}
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate font-heading text-sm font-semibold leading-tight">
+              {person.name}
+            </p>
+            {showEditMentor ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Edit ${person.name}'s profile`}
+                onClick={() => onEditMentor(person)}
+              >
+                <PencilIcon className="size-3.5" />
+              </Button>
+            ) : null}
+          </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary">{roleBadgeLabel(person.role)}</Badge>
             {person.pendingInvite ? (

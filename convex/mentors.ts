@@ -15,6 +15,14 @@ import {
 import { getProgramWeeks, isSameCalendarDay } from "./lib/programWeeks"
 import { fellowValidator, mentorValidator } from "./lib/validators"
 
+function normalizeDiscordUsername(input: string): string {
+  const trimmed = input.trim().replace(/^@+/, "")
+  if (!trimmed) {
+    throw new Error("Enter a Discord username.")
+  }
+  return trimmed
+}
+
 const roundValidator = v.object({
   _id: v.id("mentorMeetingRounds"),
   _creationTime: v.number(),
@@ -439,6 +447,63 @@ export const updateMyCalendly = cohortMutation({
       calendlyUrl: args.calendlyUrl.trim(),
     })
     const updated = await ctx.db.get("mentors", mentor._id)
+    if (!updated) {
+      throw new Error("Mentor not found")
+    }
+    return updated
+  },
+})
+
+export const updateMyDiscordUsername = cohortMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    discordUsername: v.string(),
+  },
+  returns: mentorValidator,
+  handler: async (ctx, args) => {
+    const mentor = await requireMentorForUser(ctx, args.cohortId, ctx.user._id)
+    const discordUsername = normalizeDiscordUsername(args.discordUsername)
+    await ctx.db.patch("mentors", mentor._id, { discordUsername })
+    const updated = await ctx.db.get("mentors", mentor._id)
+    if (!updated) {
+      throw new Error("Mentor not found")
+    }
+    return updated
+  },
+})
+
+export const updateMentorProfile = podManagementMutation({
+  args: {
+    cohortId: v.id("cohorts"),
+    mentorId: v.id("mentors"),
+    calendlyUrl: v.optional(v.string()),
+    discordUsername: v.optional(v.string()),
+  },
+  returns: mentorValidator,
+  handler: async (ctx, args) => {
+    const mentor = await ctx.db.get("mentors", args.mentorId)
+    if (!mentor || mentor.cohortId !== args.cohortId) {
+      throw new Error("Mentor not found")
+    }
+
+    const updates: {
+      calendlyUrl?: string
+      discordUsername?: string
+    } = {}
+
+    if (args.calendlyUrl !== undefined) {
+      updates.calendlyUrl = args.calendlyUrl.trim()
+    }
+    if (args.discordUsername !== undefined) {
+      updates.discordUsername = normalizeDiscordUsername(args.discordUsername)
+    }
+
+    if (Object.keys(updates).length === 0) {
+      throw new Error("No profile updates provided")
+    }
+
+    await ctx.db.patch("mentors", args.mentorId, updates)
+    const updated = await ctx.db.get("mentors", args.mentorId)
     if (!updated) {
       throw new Error("Mentor not found")
     }
