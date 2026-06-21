@@ -5,7 +5,11 @@ import {
   cohortQuery,
   podManagementMutation,
 } from "./lib/customFunctions"
-import { getProgramWeeks } from "./lib/programWeeks"
+import {
+  getProgramWeeks,
+  getSlotDateInProgramWeek,
+  weekdayValidator,
+} from "./lib/programWeeks"
 import { fellowValidator } from "./lib/validators"
 
 const demoDayValidator = v.object({
@@ -92,7 +96,11 @@ export const assignDemoDay = podManagementMutation({
 })
 
 export const generateAllDemoDays = podManagementMutation({
-  args: { cohortId: v.id("cohorts") },
+  args: {
+    cohortId: v.id("cohorts"),
+    dayOfWeek: weekdayValidator,
+    startFromDate: v.number(),
+  },
   returns: v.object({
     created: v.number(),
     skipped: v.number(),
@@ -103,10 +111,16 @@ export const generateAllDemoDays = podManagementMutation({
       throw new Error("Cohort not found")
     }
 
-    const programWeeks = getProgramWeeks(cohort.startDate, cohort.endDate)
-    if (programWeeks.length === 0) {
+    const demoWeekSlots = getProgramWeeks(cohort.startDate, cohort.endDate)
+      .map((week) => ({
+        weekStart: week.weekStart,
+        demoDate: getSlotDateInProgramWeek(week.weekStart, args.dayOfWeek),
+      }))
+      .filter((week) => week.demoDate >= args.startFromDate)
+
+    if (demoWeekSlots.length === 0) {
       throw new Error(
-        "Set cohort start and end dates before generating demo days.",
+        "No program weeks match the selected day and start date. Adjust cohort dates or pick an earlier start date.",
       )
     }
 
@@ -129,7 +143,7 @@ export const generateAllDemoDays = podManagementMutation({
     const assignedFellowIds = new Set(
       existingDemoDays.map((demoDay) => demoDay.fellowId),
     )
-    const usedWeekStarts = new Set(
+    const usedDemoDates = new Set(
       existingDemoDays.map((demoDay) => demoDay.demoDate),
     )
 
@@ -145,19 +159,19 @@ export const generateAllDemoDays = podManagementMutation({
       }
 
       let demoDate: number | undefined
-      for (let offset = 0; offset < programWeeks.length; offset += 1) {
-        const week = programWeeks[(weekIndex + offset) % programWeeks.length]
-        if (!usedWeekStarts.has(week.weekStart)) {
-          demoDate = week.weekStart
-          usedWeekStarts.add(week.weekStart)
-          weekIndex = (weekIndex + offset + 1) % programWeeks.length
+      for (let offset = 0; offset < demoWeekSlots.length; offset += 1) {
+        const slot = demoWeekSlots[(weekIndex + offset) % demoWeekSlots.length]
+        if (!usedDemoDates.has(slot.demoDate)) {
+          demoDate = slot.demoDate
+          usedDemoDates.add(slot.demoDate)
+          weekIndex = (weekIndex + offset + 1) % demoWeekSlots.length
           break
         }
       }
 
       if (demoDate === undefined) {
-        const week = programWeeks[weekIndex % programWeeks.length]
-        demoDate = week.weekStart
+        const slot = demoWeekSlots[weekIndex % demoWeekSlots.length]
+        demoDate = slot.demoDate
         weekIndex += 1
       }
 

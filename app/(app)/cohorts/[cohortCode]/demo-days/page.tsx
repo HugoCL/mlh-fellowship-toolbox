@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -52,11 +53,14 @@ import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
 import {
   formatDate,
+  getProgramWeekday,
   PROGRAM_TIMEZONE_LABEL,
   parseProgramDate,
   toDateInputValue,
 } from "@/lib/dates"
+import type { Weekday } from "@/lib/programWeeks"
 import { useCohortRoute } from "@/lib/use-cohort-route"
+import { getWeekdayLabel, WEEKDAY_OPTIONS } from "@/lib/weekdays"
 
 export default function DemoDaysPage() {
   const {
@@ -80,6 +84,10 @@ export default function DemoDaysPage() {
     useState<Id<"demoDays"> | null>(null)
   const [editDemoDate, setEditDemoDate] = useState("")
   const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false)
+  const [generateDayOfWeek, setGenerateDayOfWeek] = useState<Weekday>(5)
+  const [generateStartDate, setGenerateStartDate] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const isLeader = cohort?.canManagePod ?? false
   const isUmbrellaAdminBlocked =
@@ -193,9 +201,11 @@ export default function DemoDaysPage() {
                 >
                   <SelectTrigger id="demo-fellow">
                     <SelectValue placeholder="Select fellow…">
-                      {(data?.fellows ?? []).find(
-                        (fellow) => fellow._id === selectedFellow,
-                      )?.name}
+                      {
+                        (data?.fellows ?? []).find(
+                          (fellow) => fellow._id === selectedFellow,
+                        )?.name
+                      }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -224,15 +234,105 @@ export default function DemoDaysPage() {
             </form>
             <Button
               variant="outline"
-              onClick={() =>
-                void runGenerateAllWeeks(
-                  () => generateAllDemoDays({ cohortId }),
-                  "demo day",
-                )
-              }
+              onClick={() => {
+                setGenerateDayOfWeek(getProgramWeekday(cohort.cohort.startDate))
+                setGenerateStartDate(toDateInputValue(cohort.cohort.startDate))
+                setGenerateDialogOpen(true)
+              }}
             >
               Generate All Weeks
             </Button>
+            <Dialog
+              open={generateDialogOpen}
+              onOpenChange={setGenerateDialogOpen}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Generate demo days</DialogTitle>
+                  <DialogDescription>
+                    Assign one demo date per program week on the selected day,
+                    starting from the chosen date. Extra fellows share dates
+                    when there are more fellows than weeks.
+                  </DialogDescription>
+                </DialogHeader>
+                <Field>
+                  <FieldLabel htmlFor="generate-demo-day-of-week">
+                    Day of week
+                  </FieldLabel>
+                  <Select
+                    value={String(generateDayOfWeek)}
+                    onValueChange={(value) => {
+                      if (value) {
+                        setGenerateDayOfWeek(Number(value) as Weekday)
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      id="generate-demo-day-of-week"
+                      className="w-full"
+                    >
+                      <SelectValue>
+                        {getWeekdayLabel(generateDayOfWeek)}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {WEEKDAY_OPTIONS.map((option) => (
+                          <SelectItem
+                            key={option.value}
+                            value={String(option.value)}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="generate-demo-start-date">
+                    Start from ({PROGRAM_TIMEZONE_LABEL})
+                  </FieldLabel>
+                  <Input
+                    id="generate-demo-start-date"
+                    type="date"
+                    value={generateStartDate}
+                    onChange={(event) =>
+                      setGenerateStartDate(event.target.value)
+                    }
+                  />
+                </Field>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setGenerateDialogOpen(false)}
+                    disabled={isGenerating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={isGenerating || !generateStartDate}
+                    onClick={() => {
+                      setIsGenerating(true)
+                      void runGenerateAllWeeks(
+                        () =>
+                          generateAllDemoDays({
+                            cohortId,
+                            dayOfWeek: generateDayOfWeek,
+                            startFromDate: parseProgramDate(generateStartDate),
+                          }),
+                        "demo day",
+                      ).finally(() => {
+                        setIsGenerating(false)
+                        setGenerateDialogOpen(false)
+                      })
+                    }}
+                  >
+                    Generate
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </PageToolbar>
         ) : null}
 
