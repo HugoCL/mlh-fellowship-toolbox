@@ -129,3 +129,13 @@ When adding shadcn components, use the **Base UI** registry/preset for this repo
 - Program timezone is `America/New_York` (ET); date/time helpers live in `convex/lib/dates.ts` and use `@internationalized/date`.
 - Mentor week slots display a date range (week start–end), not a single day.
 - Demo days use one date per demo (no spreading across weekdays). Auto-generate assigns one fellow per program week first; when fellows exceed weeks, overflow fellows share an already-assigned date (multiple demos same day) or leaders assign dates manually.
+
+## Cursor Cloud specific instructions
+
+Environment is pre-provisioned. The startup update script runs `pnpm install`. Required secrets are injected as env vars (and present in the Convex deployment): `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CONVEX_DEPLOYMENT`, `CONVEX_DEPLOY_KEY`, `NEXT_PUBLIC_CONVEX_URL`, plus Clerk URL vars. The Convex dev deployment already has `CLERK_JWT_ISSUER_DOMAIN` and VAPID keys set, so auth and push work out of the box.
+
+- **`.env.local` is required for tmux/background processes.** Injected secrets live in the agent's interactive shell but are NOT inherited by fresh tmux/login shells, so `convex dev` will fall back to an interactive login prompt and Clerk keys won't reach `next dev`. Write the injected secrets to `.env.local` (gitignored) once so both the Convex CLI and Next.js read them from disk: `CONVEX_DEPLOYMENT`, `CONVEX_DEPLOY_KEY`, `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL`, and the `*CLERK*` vars. Running `npx convex dev --once` also auto-writes the Convex URLs into `.env.local`.
+- **Run services** (each in its own tmux session): `npx convex dev` (backend watcher; functions push to the shared `hugo-castro:fellowship-toolbox:dev` deployment) and `pnpm dev` (Next.js on http://localhost:3000). `/` 404s for guests by design — the root redirects to sign-in, and authenticated users land on a dashboard; app pages live under the `(app)` route group.
+- **Login / E2E test users** (Clerk test mode, verification code `424242`): `hugo.castro+clerk_test@mlh.io` (platform admin) and `hugo.castro.fellow-test+clerk_test@mlh.io` (fellow). The UI sign-in flow is: enter email → Continue → "Use another method" → "Email code" → enter `424242`.
+- **E2E (`pnpm test:e2e`)** targets the already-running `pnpm dev` locally (no webServer unless `CI=true`). Install the browser first: `pnpm exec playwright install --with-deps chromium`. The Playwright browser cache is not part of the standard dependency refresh, so re-run that install in a fresh VM before E2E.
+- `pnpm lint` (Biome) currently reports one pre-existing formatting error in `app/(app)/cohorts/[cohortCode]/demo-days/page.tsx` on `main`; `pnpm lint:fix` would resolve it.
