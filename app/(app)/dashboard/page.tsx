@@ -1,15 +1,10 @@
 import { Suspense } from "react"
+import { DashboardLoadingShell } from "@/components/app/dashboard-skeleton"
 import DashboardPageClient from "./dashboard-client"
 
 export default function DashboardPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="px-6 py-6 text-sm text-muted-foreground">
-          Loading dashboard…
-        </div>
-      }
-    >
+    <Suspense fallback={<DashboardLoadingShell />}>
       <DashboardPageClient />
     </Suspense>
   )

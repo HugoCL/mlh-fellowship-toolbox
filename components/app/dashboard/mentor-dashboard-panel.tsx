@@ -1,10 +1,12 @@
 "use client"
 
 import { useMutation } from "convex/react"
-import { ArrowRightIcon, CheckCircle2Icon, CircleIcon } from "lucide-react"
+import { ArrowRightIcon, CircleIcon } from "lucide-react"
 import Link from "next/link"
 import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
+import { EmptyState } from "@/components/app/empty-state"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
+import { SectionHeader } from "@/components/app/section-header"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -55,7 +57,7 @@ export function MentorDashboardPanel({
   )
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
           <CardTitle>Mentor meetings</CardTitle>
@@ -102,31 +104,35 @@ export function MentorDashboardPanel({
         />
       ) : null}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="font-heading text-lg font-semibold">Your fellows</h2>
+      <section className="flex flex-col gap-4">
+        <SectionHeader
+          title="Your fellows"
+          description={
+            openAssignments.length === 0
+              ? "Assignments appear after the pod leader generates mentor pairings."
+              : `${openAssignments.length} open meeting${openAssignments.length === 1 ? "" : "s"}.`
+          }
+        />
         {openAssignments.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center gap-3 py-6">
-              <CheckCircle2Icon className="size-5 text-primary" />
-              <p className="text-sm text-muted-foreground">
-                No pending meetings. Assignments appear after the pod leader
-                generates mentor pairings.
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="No pending meetings"
+            description="You're all caught up with your assigned fellows."
+          />
         ) : (
-          <ul className="divide-y divide-border/70 rounded-lg ring-1 ring-foreground/10">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {openAssignments.map((assignment) => (
               <li
                 key={assignment.id}
                 className="flex items-center justify-between gap-4 px-4 py-3.5"
               >
                 <div className="flex items-start gap-3">
-                  {assignment.scheduled ? (
-                    <CircleIcon className="mt-0.5 size-4 text-primary" />
-                  ) : (
-                    <CircleIcon className="mt-0.5 size-4 text-muted-foreground" />
-                  )}
+                  <CircleIcon
+                    className={
+                      assignment.scheduled
+                        ? "mt-0.5 size-4 text-primary"
+                        : "mt-0.5 size-4 text-muted-foreground"
+                    }
+                  />
                   <div>
                     <p className="font-medium">{assignment.fellowName}</p>
                     <p className="text-sm text-muted-foreground">
