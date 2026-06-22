@@ -612,55 +612,118 @@ function FellowDemoDayView({
             title="No fellows yet"
             description="Your pod leader hasn't added fellows to this cohort yet."
           />
-        ) : !myFellow ? (
-          <EmptyState
-            title="No demo day assigned"
-            description="You are not registered as a fellow in this pod."
-          />
-        ) : !myDemo ? (
-          <EmptyState
-            title="No demo day scheduled"
-            description="Your pod leader hasn't assigned a demo date for you yet."
-          />
         ) : (
-          <Card>
-            <CardContent className="flex flex-col gap-4 pt-6">
-              <SectionHeader
-                title="Your demo day"
-                description="Mark completed after you present."
+          <>
+            {myFellow && !myDemo ? (
+              <EmptyState
+                title="No demo day scheduled"
+                description="Your pod leader hasn't assigned a demo date for you yet."
               />
-              <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium">{myFellow.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(myDemo.demoDate)} ({PROGRAM_TIMEZONE_LABEL})
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={myDemo.completed}
-                    aria-label="Completed demo"
-                    onCheckedChange={(checked) => {
-                      void updateDemoCompletion({
-                        cohortId,
-                        demoDayId: myDemo._id,
-                        completed: checked === true,
-                      }).then(
-                        () => toast.success("Demo status updated."),
-                        (error: unknown) =>
-                          toast.error(
-                            error instanceof Error
-                              ? error.message
-                              : "Update failed.",
-                          ),
-                      )
-                    }}
+            ) : null}
+            {myFellow && myDemo ? (
+              <Card>
+                <CardContent className="flex flex-col gap-4 pt-6">
+                  <SectionHeader
+                    title="Your demo day"
+                    description="Mark completed after you present."
                   />
-                  Completed demo
+                  <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium">{myFellow.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(myDemo.demoDate)} ({PROGRAM_TIMEZONE_LABEL})
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={myDemo.completed}
+                        aria-label="Completed demo"
+                        onCheckedChange={(checked) => {
+                          void updateDemoCompletion({
+                            cohortId,
+                            demoDayId: myDemo._id,
+                            completed: checked === true,
+                          }).then(
+                            () => toast.success("Demo status updated."),
+                            (error: unknown) =>
+                              toast.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Update failed.",
+                              ),
+                          )
+                        }}
+                      />
+                      Completed demo
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+            <Card>
+              <CardContent className="flex flex-col gap-4 px-0 pt-6">
+                <div className="px-6">
+                  <SectionHeader
+                    title="Demo day schedule"
+                    description="Presentation dates and completion status for your pod."
+                  />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="overflow-auto border-t border-border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fellow</TableHead>
+                        <TableHead>Date for Demo</TableHead>
+                        <TableHead>Completed Demo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {fellows.map((fellow) => {
+                        const demo = demoMap.get(fellow._id)
+                        const editable = myFellowId === fellow._id
+
+                        return (
+                          <TableRow key={fellow._id}>
+                            <TableCell className="font-medium">
+                              {fellow.name}
+                            </TableCell>
+                            <TableCell>
+                              {demo
+                                ? formatDate(demo.demoDate)
+                                : "Not assigned"}
+                            </TableCell>
+                            <TableCell>
+                              <Checkbox
+                                checked={demo?.completed ?? false}
+                                disabled={!editable || !demo}
+                                aria-label={`Completed demo for ${fellow.name}`}
+                                onCheckedChange={(checked) => {
+                                  if (!demo) return
+                                  void updateDemoCompletion({
+                                    cohortId,
+                                    demoDayId: demo._id,
+                                    completed: checked === true,
+                                  }).then(
+                                    () => toast.success("Demo status updated."),
+                                    (error: unknown) =>
+                                      toast.error(
+                                        error instanceof Error
+                                          ? error.message
+                                          : "Update failed.",
+                                      ),
+                                  )
+                                }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </>
         )}
       </PageBody>
     </>
