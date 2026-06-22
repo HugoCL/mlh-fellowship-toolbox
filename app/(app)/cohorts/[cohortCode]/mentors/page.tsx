@@ -1,26 +1,27 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import { ExternalLink, Info, PencilIcon } from "lucide-react"
+import { ExternalLink, PencilIcon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
+import { InfoCallout } from "@/components/app/info-callout"
 import {
   ManageableWeekSlotList,
   runGenerateAllWeeks,
 } from "@/components/app/manageable-week-slot-list"
 import { MentorProfileEditDialog } from "@/components/app/mentor-profile-edit-dialog"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
+import {
+  PageSkeleton,
+  SkeletonList,
+  SkeletonTable,
+} from "@/components/app/page-skeleton"
+import { SectionHeader } from "@/components/app/section-header"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -101,18 +102,20 @@ export default function MentorsPage() {
 
   if (isLoading || (cohortId && cohort && dataLoading)) {
     return (
-      <>
-        <PageHeader
-          title="Mentor Meetings"
-          description="Assign and track external mentor 1:1s across the program."
-        />
-        <PageBody>
-          <EmptyState
-            title="Loading…"
-            description="Fetching mentor assignments for this pod."
-          />
-        </PageBody>
-      </>
+      <PageSkeleton
+        title="Mentor Meetings"
+        description="Assign and track external mentor 1:1s across the program."
+        width={showLeaderView ? "wide" : "default"}
+      >
+        {showLeaderView ? (
+          <div className="flex flex-col gap-6">
+            <SkeletonList count={1} />
+            <SkeletonTable rows={5} columns={4} />
+          </div>
+        ) : (
+          <SkeletonList count={3} />
+        )}
+      </PageSkeleton>
     )
   }
 
@@ -173,91 +176,86 @@ export default function MentorsPage() {
         title="Mentor Meetings"
         description="Assign and track external mentor 1:1s across the program."
       />
-      <PageBody>
-        <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span>
-            Schedule meetings at least 1 week in advance. Fellows can mark their
-            own scheduled and completed status.
-          </span>
-        </p>
+      <PageBody width="wide">
+        <InfoCallout variant="info">
+          Schedule meetings at least 1 week in advance. Fellows can mark their
+          own scheduled and completed status.
+        </InfoCallout>
 
         <PageToolbar title="Add a mentor round">
-          <div className="flex flex-wrap items-end gap-3">
-            <form
-              className="flex flex-wrap items-end gap-3"
-              onSubmit={async (event) => {
-                event.preventDefault()
-                try {
-                  await createRound({
-                    cohortId,
-                    targetWeekLabel:
-                      weekLabel || formatWeekLabel(parseProgramDate(weekStart)),
-                    targetWeekStart: parseProgramDate(weekStart),
-                  })
-                  toast.success("Mentor round added.")
-                  setWeekLabel("")
-                  setWeekStart("")
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Failed to add round.",
-                  )
-                }
-              }}
-            >
-              <Field>
-                <FieldLabel htmlFor="week-label">Week label</FieldLabel>
-                <Input
-                  id="week-label"
-                  value={weekLabel}
-                  onChange={(e) => setWeekLabel(e.target.value)}
-                  placeholder="Week of June 30th…"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="week-start">
-                  Week start ({PROGRAM_TIMEZONE_LABEL})
-                </FieldLabel>
-                <Input
-                  id="week-start"
-                  type="date"
-                  value={weekStart}
-                  onChange={(e) => setWeekStart(e.target.value)}
-                />
-              </Field>
-              <Button type="submit">Add Round</Button>
-            </form>
-            <Button
-              variant="outline"
-              onClick={() =>
-                void runGenerateAllWeeks(
-                  () => generateAllRounds({ cohortId }),
-                  "mentor round",
+          <form
+            className="flex flex-wrap items-end gap-3"
+            onSubmit={async (event) => {
+              event.preventDefault()
+              try {
+                await createRound({
+                  cohortId,
+                  targetWeekLabel:
+                    weekLabel || formatWeekLabel(parseProgramDate(weekStart)),
+                  targetWeekStart: parseProgramDate(weekStart),
+                })
+                toast.success("Mentor round added.")
+                setWeekLabel("")
+                setWeekStart("")
+              } catch (error) {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to add round.",
                 )
               }
-            >
-              Generate All Weeks
-            </Button>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                try {
-                  const created = await generateAssignments({ cohortId })
-                  toast.success(`Generated ${created} mentor assignments.`)
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Failed to generate assignments.",
-                  )
-                }
-              }}
-            >
-              Generate Assignments
-            </Button>
-          </div>
+            }}
+          >
+            <Field>
+              <FieldLabel htmlFor="week-label">Week label</FieldLabel>
+              <Input
+                id="week-label"
+                value={weekLabel}
+                onChange={(e) => setWeekLabel(e.target.value)}
+                placeholder="Week of June 30th…"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="week-start">
+                Week start ({PROGRAM_TIMEZONE_LABEL})
+              </FieldLabel>
+              <Input
+                id="week-start"
+                type="date"
+                value={weekStart}
+                onChange={(e) => setWeekStart(e.target.value)}
+              />
+            </Field>
+            <Button type="submit">Add Round</Button>
+          </form>
+          <Button
+            variant="outline"
+            onClick={() =>
+              void runGenerateAllWeeks(
+                () => generateAllRounds({ cohortId }),
+                "mentor round",
+              )
+            }
+          >
+            Generate All Weeks
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                const created = await generateAssignments({ cohortId })
+                toast.success(`Generated ${created} mentor assignments.`)
+              } catch (error) {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to generate assignments.",
+                )
+              }
+            }}
+          >
+            Generate Assignments
+          </Button>
         </PageToolbar>
 
         <ManageableWeekSlotList
@@ -287,27 +285,26 @@ export default function MentorsPage() {
         />
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Mentor profiles</CardTitle>
-            <CardDescription>
-              Scheduling links and Discord usernames for fellows to reach
-              mentors.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-4 pt-6">
+            <SectionHeader
+              title="Mentor profiles"
+              description="Scheduling links and Discord usernames for fellows to reach mentors."
+            />
             {(data.mentors ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No mentors added yet. Add mentors in the Directory.
-              </p>
+              <EmptyState
+                title="No mentors yet"
+                description="Add mentors in the Directory."
+                className="py-6"
+              />
             ) : (
-              <ul className="flex flex-col gap-3 text-sm">
+              <ul className="flex flex-col gap-3">
                 {(data.mentors ?? []).map((mentor) => (
                   <li
                     key={mentor._id}
-                    className="flex flex-col gap-2 rounded-lg border border-border/70 p-3 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium">{mentor.name}</p>
+                      <p className="text-sm font-medium">{mentor.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {mentor.calendlyUrl
                           ? "Scheduling link set"
@@ -380,17 +377,14 @@ export default function MentorsPage() {
           />
         ) : (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Mentor assignment matrix
-              </CardTitle>
-              <CardDescription>
-                Fellow mentor pairings by program round. Fellows can update
-                their own scheduled and completed checkboxes.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-0">
-              <div className="overflow-auto border-t border-border/60">
+            <CardContent className="flex flex-col gap-4 px-0 pt-6">
+              <div className="px-6">
+                <SectionHeader
+                  title="Mentor assignment matrix"
+                  description="Fellow mentor pairings by program round. Fellows can update their own scheduled and completed checkboxes."
+                />
+              </div>
+              <div className="overflow-auto border-t border-border">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -608,15 +602,12 @@ function FellowMentorMeetingsView({
         description="Your assigned mentor 1:1s and scheduling links."
       />
       <PageBody>
-        <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span>
-            Book each mentor 1:1 at least 1 week ahead, then mark{" "}
-            <span className="font-medium text-foreground">Scheduled</span> and{" "}
-            <span className="font-medium text-foreground">Completed</span> when
-            done.
-          </span>
-        </p>
+        <InfoCallout variant="info">
+          Book each mentor 1:1 at least 1 week ahead, then mark{" "}
+          <span className="font-medium text-foreground">Scheduled</span> and{" "}
+          <span className="font-medium text-foreground">Completed</span> when
+          done.
+        </InfoCallout>
 
         {sortedAssignments.length === 0 ? (
           <EmptyState
@@ -627,53 +618,54 @@ function FellowMentorMeetingsView({
           <>
             {pendingAssignments.length > 0 ? (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Up next</CardTitle>
-                  <CardDescription>
-                    {pendingAssignments.length === 1
-                      ? "1 mentor meeting still needs your attention."
-                      : `${pendingAssignments.length} mentor meetings still need your attention.`}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2">
-                  {pendingAssignments.map((assignment) => {
-                    const mentor = mentorMap.get(assignment.mentorId)
-                    const round = roundMap.get(assignment.roundId)
-                    const status = mentorMeetingStatus(
-                      assignment.scheduled,
-                      assignment.completed,
-                    )
-                    return (
-                      <div
-                        key={assignment._id}
-                        className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">
-                            {mentor?.name ?? "Mentor"}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {round?.targetWeekLabel ?? "Program round"}
-                          </p>
+                <CardContent className="flex flex-col gap-4 pt-6">
+                  <SectionHeader
+                    title="Up next"
+                    description={
+                      pendingAssignments.length === 1
+                        ? "1 mentor meeting still needs your attention."
+                        : `${pendingAssignments.length} mentor meetings still need your attention.`
+                    }
+                  />
+                  <div className="flex flex-col gap-2">
+                    {pendingAssignments.map((assignment) => {
+                      const mentor = mentorMap.get(assignment.mentorId)
+                      const round = roundMap.get(assignment.roundId)
+                      const status = mentorMeetingStatus(
+                        assignment.scheduled,
+                        assignment.completed,
+                      )
+                      return (
+                        <div
+                          key={assignment._id}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {mentor?.name ?? "Mentor"}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {round?.targetWeekLabel ?? "Program round"}
+                            </p>
+                          </div>
+                          <StatusBadge status={status} />
                         </div>
-                        <StatusBadge status={status} />
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             ) : null}
 
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Your mentor 1:1s</CardTitle>
-                <CardDescription>
-                  One row per program round. Update status after you book and
-                  complete each meeting.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-0">
-                <div className="divide-y divide-border/60 border-t border-border/60">
+              <CardContent className="flex flex-col gap-4 px-0 pt-6">
+                <div className="px-6">
+                  <SectionHeader
+                    title="Your mentor 1:1s"
+                    description="One row per program round. Update status after you book and complete each meeting."
+                  />
+                </div>
+                <div className="divide-y divide-border border-t border-border">
                   {sortedAssignments.map((assignment) => {
                     const mentor = mentorMap.get(assignment.mentorId)
                     const round = roundMap.get(assignment.roundId)
@@ -685,11 +677,11 @@ function FellowMentorMeetingsView({
                     return (
                       <div
                         key={assignment._id}
-                        className="flex flex-col gap-4 px-(--card-spacing) py-4"
+                        className="flex flex-col gap-4 px-6 py-4"
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div>
-                            <p className="font-medium">
+                            <p className="text-sm font-medium">
                               {mentor?.name ?? "Mentor"}
                             </p>
                             <p className="text-sm text-muted-foreground">
@@ -758,19 +750,17 @@ function FellowMentorMeetingsView({
 
             {assignedMentors.some((mentor) => mentor.calendlyUrl) ? (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Scheduling links</CardTitle>
-                  <CardDescription>
-                    Scheduling links for mentors assigned to you.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col gap-4 pt-6">
+                  <SectionHeader
+                    title="Scheduling links"
+                    description="Scheduling links for mentors assigned to you."
+                  />
                   <div className="flex flex-col gap-2">
                     {assignedMentors.map((mentor) =>
                       mentor.calendlyUrl ? (
                         <div
                           key={mentor._id}
-                          className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
+                          className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/40"
                         >
                           <span className="truncate text-sm font-medium">
                             {mentor.name}

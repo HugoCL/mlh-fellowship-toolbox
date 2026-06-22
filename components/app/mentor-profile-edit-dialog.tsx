@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { InfoCallout } from "@/components/app/info-callout"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -51,11 +51,12 @@ export function MentorProfileEditDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit mentor profile</DialogTitle>
-          <DialogDescription>
-            Update contact details for {mentorName}. Mentors usually do not sign
-            in, so pod leaders maintain this information.
-          </DialogDescription>
         </DialogHeader>
+
+        <InfoCallout variant="neutral" className="mb-0">
+          Update contact details for {mentorName}. Mentors usually do not sign
+          in, so pod leaders maintain this information.
+        </InfoCallout>
 
         <form
           className="flex flex-col gap-4"
