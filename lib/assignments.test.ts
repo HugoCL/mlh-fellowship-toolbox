@@ -264,5 +264,44 @@ describe("generateMentorAssignments", () => {
         expect(count).toBe(2)
       }
     }
+
+    for (const fellowId of fellowIds) {
+      const mentorsForFellow = new Set(
+        assignments
+          .filter((item) => item.fellowId === fellowId)
+          .map((item) => item.mentorId),
+      )
+      expect(mentorsForFellow.size).toBe(mentorIds.length)
+    }
+  })
+
+  it("does not assign repeat mentors before full coverage is possible", () => {
+    const mentorIds = [mentor("m1"), mentor("m2"), mentor("m3")]
+    const fellowIds = [
+      fellow("f1"),
+      fellow("f2"),
+      fellow("f3"),
+      fellow("f4"),
+      fellow("f5"),
+      fellow("f6"),
+    ]
+    const rounds = [
+      { roundNumber: 1, targetWeekLabel: "Week 1", targetWeekStart: 1 },
+      { roundNumber: 2, targetWeekLabel: "Week 2", targetWeekStart: 2 },
+      { roundNumber: 3, targetWeekLabel: "Week 3", targetWeekStart: 3 },
+    ]
+
+    const assignments = generateMentorAssignments({
+      fellowIds,
+      mentorIds,
+      rounds,
+    })
+
+    for (const fellowId of fellowIds) {
+      const mentorsForFellow = assignments
+        .filter((item) => item.fellowId === fellowId)
+        .map((item) => item.mentorId)
+      expect(new Set(mentorsForFellow).size).toBe(mentorIds.length)
+    }
   })
 })
