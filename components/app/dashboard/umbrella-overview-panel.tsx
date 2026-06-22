@@ -2,8 +2,10 @@
 
 import { ArrowRightIcon } from "lucide-react"
 import Link from "next/link"
+import { InfoCallout } from "@/components/app/info-callout"
+import { SectionHeader } from "@/components/app/section-header"
+import { Stat, StatGroup } from "@/components/app/stat"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cohortPath } from "@/lib/cohort-routes"
 
 type PodSummary = {
@@ -31,56 +33,35 @@ export function UmbrellaOverviewPanel({
   const podsWithoutLeader = groups.filter((group) => !group.leader).length
 
   return (
-    <div className="flex max-w-4xl flex-col gap-6">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col gap-6">
+      <InfoCallout variant="neutral">
         You manage the cohort umbrella. Pod leaders run fellows, mentors, and
         activities inside their pods.
-      </p>
+      </InfoCallout>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pods</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-3xl font-semibold tabular-nums">
-              {groups.length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Fellows</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-3xl font-semibold tabular-nums">
-              {totalFellows}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Needs leaders</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-heading text-3xl font-semibold tabular-nums">
-              {podsWithoutLeader}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatGroup columns={3}>
+        <Stat label="Pods" value={groups.length} />
+        <Stat label="Fellows" value={totalFellows} />
+        <Stat
+          label="Needs leaders"
+          value={podsWithoutLeader}
+          detail={
+            podsWithoutLeader > 0
+              ? podsWithoutLeader === 1
+                ? "pod unassigned"
+                : "pods unassigned"
+              : undefined
+          }
+        />
+      </StatGroup>
 
       {groups.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <h2 className="font-heading text-lg font-semibold">Pods</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Select a pod in the sidebar to view its dashboard.
-              </p>
-            </div>
-          </div>
-          <ul className="divide-y divide-border/70 rounded-lg ring-1 ring-foreground/10">
+        <section className="flex flex-col gap-4">
+          <SectionHeader
+            title="Pods"
+            description="Select a pod in the sidebar to view its dashboard."
+          />
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {groups.map((group) => (
               <li key={group.cohort._id}>
                 <Link

@@ -4,7 +4,10 @@ import { useMutation, useQuery } from "convex/react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
+import { EmptyState } from "@/components/app/empty-state"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
+import { PageSkeleton, SkeletonList } from "@/components/app/page-skeleton"
+import { SectionHeader } from "@/components/app/section-header"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -90,6 +93,17 @@ export default function CohortsPage() {
     }
   }
 
+  if (cohorts === undefined || profile === undefined) {
+    return (
+      <PageSkeleton
+        title="Cohorts"
+        description="Create and manage program versions for your fellowship pods."
+      >
+        <SkeletonList count={3} />
+      </PageSkeleton>
+    )
+  }
+
   return (
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       <PageHeader
@@ -106,46 +120,55 @@ export default function CohortsPage() {
         }
       />
       <PageBody>
-        <section className="flex flex-col gap-3">
-          <h2 className="font-heading text-lg font-semibold">
-            {podOnlyLeader ? "Your pods" : "Your cohorts"}
-          </h2>
-          <div className="divide-y divide-border/70 rounded-lg border border-border/70">
-            {(cohorts ?? []).map((item) => (
-              <div
-                key={item.cohort._id}
-                className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="font-medium">{item.cohort.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.cohort.programCode}
-                    {isPodCohort(item.cohort) ? " · Pod" : " · Cohort"}
-                    {" · "}
-                    {formatDate(item.cohort.startDate)} –{" "}
-                    {formatDate(item.cohort.endDate)}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  nativeButton={false}
-                  render={
-                    <Link href={dashboardPath(item.cohort.programCode)} />
-                  }
+        <section className="flex flex-col gap-4">
+          <SectionHeader title={podOnlyLeader ? "Your pods" : "Your cohorts"} />
+          {cohorts.length === 0 ? (
+            <EmptyState
+              title={podOnlyLeader ? "No pods yet" : "No cohorts yet"}
+              description={
+                podOnlyLeader
+                  ? "Accept a pod leader invite to get started."
+                  : "Create one to get started."
+              }
+              action={
+                canCreateCohort ? (
+                  <DialogTrigger render={<Button />}>
+                    Create cohort
+                  </DialogTrigger>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+              {cohorts.map((item) => (
+                <div
+                  key={item.cohort._id}
+                  className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  {isPodCohort(item.cohort) ? "Open pod" : "Open"}
-                </Button>
-              </div>
-            ))}
-            {cohorts?.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground">
-                {podOnlyLeader
-                  ? "No pods yet. Accept a pod leader invite to get started."
-                  : "No cohorts yet. Create one to get started."}
-              </p>
-            ) : null}
-          </div>
+                  <div>
+                    <p className="font-medium">{item.cohort.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.cohort.programCode}
+                      {isPodCohort(item.cohort) ? " · Pod" : " · Cohort"}
+                      {" · "}
+                      {formatDate(item.cohort.startDate)} –{" "}
+                      {formatDate(item.cohort.endDate)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    nativeButton={false}
+                    render={
+                      <Link href={dashboardPath(item.cohort.programCode)} />
+                    }
+                  >
+                    {isPodCohort(item.cohort) ? "Open pod" : "Open"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </PageBody>
 

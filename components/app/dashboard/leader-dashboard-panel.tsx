@@ -1,16 +1,14 @@
 "use client"
 
-import { ArrowRightIcon, UsersIcon } from "lucide-react"
+import { ArrowRightIcon } from "lucide-react"
 import Link from "next/link"
+import { EmptyState } from "@/components/app/empty-state"
+import { ProgressBar } from "@/components/app/progress-bar"
+import { SectionHeader } from "@/components/app/section-header"
+import { Stat, StatStrip } from "@/components/app/stat"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type SetupTask = {
   id: string
@@ -62,29 +60,11 @@ export function LeaderDashboardPanel({
     highPriorityTasks.length > 0 ? highPriorityTasks : setupTasks
 
   return (
-    <div className="flex max-w-4xl flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg ring-1 ring-foreground/10 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <UsersIcon className="size-4" aria-hidden="true" />
-            <span>In this pod</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xs text-muted-foreground">Fellows</span>
-            <span className="font-heading text-2xl font-semibold tabular-nums">
-              {fellowCount}
-            </span>
-          </div>
-          <div
-            className="hidden h-4 w-px bg-border sm:block"
-            aria-hidden="true"
-          />
-          <div className="flex items-baseline gap-2">
-            <span className="text-xs text-muted-foreground">Mentors</span>
-            <span className="font-heading text-2xl font-semibold tabular-nums">
-              {mentorCount}
-            </span>
-          </div>
+    <div className="flex flex-col gap-6">
+      <StatStrip className="justify-between">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <Stat label="Fellows" value={fellowCount} />
+          <Stat label="Mentors" value={mentorCount} />
         </div>
         <Button
           variant="outline"
@@ -94,21 +74,19 @@ export function LeaderDashboardPanel({
         >
           Open directory
         </Button>
-      </div>
+      </StatStrip>
 
       {attentionTasks.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <div>
-            <h2 className="font-heading text-lg font-semibold">
-              {programStarted ? "Needs attention" : "Get your pod ready"}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {programStarted
+        <section className="flex flex-col gap-4">
+          <SectionHeader
+            title={programStarted ? "Needs attention" : "Get your pod ready"}
+            description={
+              programStarted
                 ? "Tackle these before the next check-in."
-                : "Complete setup so fellows can start the program."}
-            </p>
-          </div>
-          <ul className="divide-y divide-border/70 rounded-lg ring-1 ring-foreground/10">
+                : "Complete setup so fellows can start the program."
+            }
+          />
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {attentionTasks.map((task) => (
               <li key={task.id}>
                 <Link
@@ -130,16 +108,12 @@ export function LeaderDashboardPanel({
       ) : null}
 
       {activityModules.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <div>
-            <h2 className="font-heading text-lg font-semibold">
-              Program progress
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Completion across active modules in this pod.
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+        <section className="flex flex-col gap-4">
+          <SectionHeader
+            title="Program progress"
+            description="Completion across active modules in this pod."
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
             {activityModules.map((module) => {
               const percent = modulePercent(module.completed, module.total)
               return (
@@ -168,18 +142,17 @@ export function LeaderDashboardPanel({
                       </div>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
-                      <p className="font-heading text-2xl font-semibold tabular-nums">
+                      <p className="font-heading text-2xl font-semibold tabular-nums tracking-tight">
                         {percent}%
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {module.completed} of {module.total} complete
                       </p>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out motion-reduce:transition-none"
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
+                      <ProgressBar
+                        value={module.completed}
+                        max={module.total}
+                        aria-label={`${module.label} progress`}
+                      />
                     </CardContent>
                   </Card>
                 </Link>
@@ -190,16 +163,11 @@ export function LeaderDashboardPanel({
       ) : null}
 
       {!readOnly && setupTasks.length > attentionTasks.length ? (
-        <section className="flex flex-col gap-3">
-          <div>
-            <h2 className="font-heading text-lg font-semibold">
-              All setup items
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {setupTasks.length} open item
-              {setupTasks.length === 1 ? "" : "s"}
-            </p>
-          </div>
+        <section className="flex flex-col gap-4">
+          <SectionHeader
+            title="All setup items"
+            description={`${setupTasks.length} open item${setupTasks.length === 1 ? "" : "s"}`}
+          />
           <div className="flex flex-col gap-2">
             {setupTasks.map((task) => (
               <Button
@@ -219,15 +187,10 @@ export function LeaderDashboardPanel({
       ) : null}
 
       {attentionTasks.length === 0 && activityModules.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pod is set up</CardTitle>
-            <CardDescription>
-              Add fellows and configure activities from the directory and
-              feature pages in the sidebar.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <EmptyState
+          title="Pod is set up"
+          description="Add fellows and configure activities from the directory and feature pages in the sidebar."
+        />
       ) : null}
     </div>
   )
