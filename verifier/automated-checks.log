@@ -1,0 +1,24 @@
+=== pnpm install ===
+exit: 0
+Already up to date
+Done in 333ms using pnpm v11.8.0
+
+=== pnpm typecheck ===
+exit: 0
+$ tsc --noEmit
+
+=== pnpm lint ===
+exit: 0
+$ biome check .
+Checked 169 files in 178ms. No fixes applied.
+
+=== pnpm build ===
+exit: 0
+Next.js 16.2.6 (Turbopack)
+✓ Compiled successfully in 7.0s
+✓ Generating static pages (8/8)
+All cohort feature routes present in build output.
+
+=== playwright verifier ===
+exit: 0
+5 passed (13.3s)
