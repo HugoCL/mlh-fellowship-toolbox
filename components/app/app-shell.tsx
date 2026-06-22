@@ -12,6 +12,7 @@ import {
   ListTodoIcon,
   type LucideIcon,
   MessagesSquareIcon,
+  NotebookPenIcon,
   PresentationIcon,
   SettingsIcon,
   UserRoundIcon,
@@ -327,6 +328,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           href: cohortPath(workspaceProgramCode, "action-items"),
           label: "Action Items",
           icon: ListTodoIcon,
+        },
+        {
+          href: cohortPath(workspaceProgramCode, "notes-viewer"),
+          label: "Notes Viewer",
+          icon: NotebookPenIcon,
         },
         {
           href: cohortPath(workspaceProgramCode, "notifications"),
