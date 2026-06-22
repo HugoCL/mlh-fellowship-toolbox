@@ -38,36 +38,24 @@ export function generateMentorAssignments(args: {
     throw new Error("Need at least 2 mentors and 2 rounds")
   }
 
-  const assignments: MentorAssignmentInput[] = []
-  const mentorLoad = new Map<string, number>()
-
-  for (const mentorId of mentorIds) {
-    mentorLoad.set(mentorId, 0)
+  if (mentorIds.length > rounds.length) {
+    throw new Error(
+      `Need at least ${mentorIds.length} mentor meeting weeks for fellows to meet each mentor (have ${rounds.length})`,
+    )
   }
 
-  for (const fellowId of fellowIds) {
-    const usedMentors = new Set<string>()
+  const sortedFellows = [...fellowIds].sort((a, b) => a.localeCompare(b))
+  const sortedMentors = [...mentorIds].sort((a, b) => a.localeCompare(b))
+  const assignments: MentorAssignmentInput[] = []
 
-    for (const round of rounds) {
-      const sortedMentors = [...mentorIds].sort((a, b) => {
-        const loadA = mentorLoad.get(a) ?? 0
-        const loadB = mentorLoad.get(b) ?? 0
-        if (loadA !== loadB) {
-          return loadA - loadB
-        }
-        return a.localeCompare(b)
-      })
-
+  for (const [roundIndex, round] of rounds.entries()) {
+    for (const [fellowIndex, fellowId] of sortedFellows.entries()) {
       const mentorId =
-        sortedMentors.find((id) => !usedMentors.has(id)) ??
-        sortedMentors[round.roundNumber % sortedMentors.length]
+        sortedMentors[(fellowIndex + roundIndex) % sortedMentors.length]
 
       if (!mentorId) {
         throw new Error("Unable to assign mentor")
       }
-
-      usedMentors.add(mentorId)
-      mentorLoad.set(mentorId, (mentorLoad.get(mentorId) ?? 0) + 1)
 
       assignments.push({
         fellowId,
