@@ -119,11 +119,11 @@ export function ManageableWeekSlotList({
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{title}</CardTitle>
+          <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-          <div className="overflow-auto border-t border-border/60">
+          <div className="overflow-auto border-t border-border">
             <Table>
               <TableHeader>
                 <TableRow>

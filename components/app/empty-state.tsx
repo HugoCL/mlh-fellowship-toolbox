@@ -20,7 +20,7 @@ export function EmptyState({
   className?: string
 }) {
   return (
-    <Empty className={cn("flex-none py-12", className)}>
+    <Empty className={cn("flex-none py-10", className)}>
       <EmptyHeader>
         <EmptyTitle>{title}</EmptyTitle>
         {description ? (
