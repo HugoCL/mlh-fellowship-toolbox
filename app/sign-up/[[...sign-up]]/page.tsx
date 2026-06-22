@@ -1,7 +1,7 @@
 import { SignUp } from "@clerk/nextjs"
+import { AUTH_ROUTES } from "@/components/auth/auth-routes"
 import { AuthScreen } from "@/components/auth/auth-screen"
 import { clerkAppearance } from "@/components/auth/clerk-appearance"
-import { AUTH_ROUTES } from "@/components/auth/auth-routes"
 
 export default function SignUpPage() {
   return (
