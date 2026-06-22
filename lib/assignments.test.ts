@@ -314,4 +314,42 @@ describe("generateMentorAssignments", () => {
       expect(new Set(mentorsForFellow).size).toBe(mentorIds.length)
     }
   })
+
+  it("assigns each fellow once per mentor and leaves extra weeks empty", () => {
+    const mentorIds = [mentor("m1"), mentor("m2"), mentor("m3")]
+    const fellowIds = Array.from({ length: 14 }, (_, index) =>
+      fellow(`f${index + 1}`),
+    )
+    const rounds = Array.from({ length: 7 }, (_, index) => ({
+      roundNumber: index + 1,
+      targetWeekLabel: `Week ${index + 2}`,
+      targetWeekStart: index + 1,
+    }))
+
+    const assignments = generateMentorAssignments({
+      fellowIds,
+      mentorIds,
+      rounds,
+    })
+
+    expect(assignments).toHaveLength(14 * mentorIds.length)
+
+    for (const fellowId of fellowIds) {
+      const fellowAssignments = assignments.filter(
+        (item) => item.fellowId === fellowId,
+      )
+      expect(fellowAssignments).toHaveLength(mentorIds.length)
+      expect(new Set(fellowAssignments.map((item) => item.mentorId)).size).toBe(
+        mentorIds.length,
+      )
+      expect(
+        new Set(fellowAssignments.map((item) => item.roundNumber)).size,
+      ).toBe(mentorIds.length)
+    }
+
+    const assignedRoundNumbers = new Set(
+      assignments.map((item) => item.roundNumber),
+    )
+    expect(assignedRoundNumbers).toEqual(new Set([1, 2, 3]))
+  })
 })
