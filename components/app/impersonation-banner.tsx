@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
+import { cn } from "@/lib/utils"
 
 export function ImpersonationBanner() {
   const router = useRouter()
@@ -45,7 +46,12 @@ export function ImpersonationBanner() {
   }
 
   return (
-    <Alert className="rounded-none border-x-0 border-t-0 border-amber-500/40 bg-amber-500/10 px-4 py-2.5">
+    <Alert
+      className={cn(
+        "rounded-none border-x-0 border-t-0 border-b border-warning/30 bg-warning/10 px-4 py-2.5",
+        "[&>svg]:text-warning",
+      )}
+    >
       <EyeIcon />
       <AlertTitle>Viewing as {impersonation.fellow.name}</AlertTitle>
       <AlertDescription>

@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronsUpDownIcon } from "lucide-react"
+import { shellSwitcherTriggerClass } from "@/components/app/cohort-switcher"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -45,21 +46,21 @@ export function PodSwitcher({
             <Button
               variant="outline"
               size="sm"
-              className="h-auto min-h-6 w-full justify-between gap-2 py-1.5"
+              className={shellSwitcherTriggerClass}
               aria-label="Active pod"
               disabled
             />
           }
         >
           <span className="min-w-0 flex-1 truncate text-left">
-            <span className="block truncate font-medium leading-tight">
+            <span className="block truncate text-sm font-medium leading-tight">
               No pods yet
             </span>
             <span className="block truncate text-xs leading-tight text-muted-foreground">
               Add a pod in Cohort Settings
             </span>
           </span>
-          <ChevronsUpDownIcon data-icon="inline-end" />
+          <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
       </DropdownMenu>
     )
@@ -72,13 +73,13 @@ export function PodSwitcher({
           <Button
             variant="outline"
             size="sm"
-            className="h-auto min-h-6 w-full justify-between gap-2 py-1.5"
+            className={shellSwitcherTriggerClass}
             aria-label="Switch active pod"
           />
         }
       >
         <span className="min-w-0 flex-1 truncate text-left">
-          <span className="block truncate font-medium leading-tight">
+          <span className="block truncate text-sm font-medium leading-tight">
             {active?.cohort.programCode ?? "Select pod"}
           </span>
           <span className="block truncate text-xs leading-tight text-muted-foreground">
@@ -89,7 +90,7 @@ export function PodSwitcher({
                 : "No pod leader assigned"}
           </span>
         </span>
-        <ChevronsUpDownIcon data-icon="inline-end" />
+        <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
         <DropdownMenuGroup>

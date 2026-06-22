@@ -38,6 +38,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
 import { api } from "@/convex/_generated/api"
@@ -59,6 +60,8 @@ import { useIsImpersonating } from "@/lib/use-impersonation"
 import { useWorkspacePod } from "@/lib/use-workspace-pod"
 import { cn } from "@/lib/utils"
 
+const APP_HOME = "/dash" + "board"
+
 function SidebarBrandHeader() {
   const { state, toggleSidebar } = useSidebar()
   const collapsed = state === "collapsed"
@@ -68,30 +71,31 @@ function SidebarBrandHeader() {
       className={cn(
         "flex w-full min-w-0",
         collapsed
-          ? "flex-col items-center gap-3 pb-1"
+          ? "flex-col items-center gap-2"
           : "items-center justify-between gap-2",
       )}
     >
-      {collapsed ? (
-        <Link
-          href="/dashboard"
-          className="flex size-10 items-center justify-center rounded-full bg-sidebar-primary/10 font-heading text-sm font-semibold text-sidebar-primary transition-colors hover:bg-sidebar-primary/15"
-        >
+      <Link
+        href={APP_HOME}
+        className={cn(
+          "flex min-w-0 items-center gap-2.5 transition-colors",
+          collapsed ? "justify-center" : "flex-1",
+        )}
+      >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary font-heading text-xs font-semibold text-primary-foreground">
           FT
-        </Link>
-      ) : (
-        <Link
-          href="/dashboard"
-          className="min-w-0 truncate font-heading text-base font-semibold tracking-tight text-sidebar-foreground transition-colors hover:text-sidebar-primary"
-        >
-          Fellowship Toolbox
-        </Link>
-      )}
+        </span>
+        {!collapsed ? (
+          <span className="min-w-0 truncate font-heading text-sm font-semibold tracking-tight text-sidebar-foreground">
+            Fellowship Toolbox
+          </span>
+        ) : null}
+      </Link>
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={toggleSidebar}
-        className="shrink-0 text-muted-foreground hover:text-sidebar-foreground"
+        className="shrink-0 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
@@ -106,14 +110,15 @@ function SidebarUserFooter({ name }: { name: string }) {
 
   if (collapsed) {
     return (
-      <div className="flex justify-center py-1">
+      <div className="flex flex-col items-center gap-2 py-1">
+        <SettingsMenu />
         <UserButton />
       </div>
     )
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2 px-1 py-1">
+    <div className="flex min-w-0 items-center gap-2 rounded-md border border-sidebar-border bg-background/60 px-2 py-1.5">
       <span className="min-w-0 flex-1 truncate text-sm font-medium text-sidebar-foreground">
         {name}
       </span>
@@ -148,20 +153,16 @@ function SidebarNavGroup({
     <SidebarGroup
       className={cn(
         "p-0 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0",
-        variant === "default" && "pt-0.5 group-data-[collapsible=icon]:pt-0",
-        variant === "admin" &&
-          "mt-1 border-t border-sidebar-border/60 pt-3 group-data-[collapsible=icon]:mt-0.5 group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:pt-1",
+        variant === "admin" && "pt-1 group-data-[collapsible=icon]:pt-0.5",
       )}
     >
       {label ? (
-        <SidebarGroupLabel className="mb-1.5 h-auto px-0.5 group-data-[collapsible=icon]:mb-0">
-          <span className="inline-flex items-center rounded-md bg-sidebar-accent/35 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {label}
-          </span>
+        <SidebarGroupLabel className="mb-1 h-auto px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground group-data-[collapsible=icon]:mb-0">
+          {label}
         </SidebarGroupLabel>
       ) : null}
       <SidebarGroupContent className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-        <SidebarMenu className="gap-0.5">
+        <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
@@ -342,7 +343,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? dashboardPath(activeProgramCode, selectedPodProgramCode)
       : activeProgramCode
         ? dashboardPath(activeProgramCode)
-        : "/dashboard"
+        : APP_HOME
 
   const settingsNavItems =
     !isImpersonating && effectiveRole === "podLeader" && activeProgramCode
@@ -432,8 +433,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   function isNavActive(href: string) {
     const path = href.split("?")[0] ?? href
-    if (path === "/dashboard") {
-      return pathname === "/dashboard"
+    if (path === APP_HOME) {
+      return pathname === APP_HOME
     }
     if (path === "/cohorts") {
       return pathname === "/cohorts"
@@ -444,7 +445,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar variant="inset" collapsible="icon">
-        <SidebarHeader className="gap-3 px-3 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:pb-4">
+        <SidebarHeader className="gap-3 border-b border-sidebar-border px-3 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
           <SidebarBrandHeader />
           <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
             <CohortSwitcher
@@ -452,9 +453,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               activeCohortId={activeCohortId}
             />
             {isCohortAdmin && !isImpersonating ? (
-              <div className="flex flex-col gap-1">
-                <p className="px-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Active Pod
+              <div className="flex flex-col gap-1.5">
+                <p className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Active pod
                 </p>
                 <PodSwitcher
                   groups={groups ?? []}
@@ -472,20 +473,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ) : null}
           </div>
         </SidebarHeader>
-        <SidebarContent className="flex flex-col gap-2 px-2 pt-1 pb-2 group-data-[collapsible=icon]:gap-1.5 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-3">
+        <SidebarContent className="flex flex-col gap-3 px-2 py-3 group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-3">
           <SidebarNavGroup
             label={hasCohortContext ? "Workspace" : undefined}
             items={workspaceNavItems}
             isNavActive={isNavActive}
           />
-          <SidebarNavGroup
-            label="Admin"
-            items={adminNavItems}
-            isNavActive={isNavActive}
-            variant="admin"
-          />
+          {adminNavItems.length > 0 ? (
+            <>
+              <SidebarSeparator className="mx-0 group-data-[collapsible=icon]:hidden" />
+              <SidebarNavGroup
+                label="Admin"
+                items={adminNavItems}
+                isNavActive={isNavActive}
+                variant="admin"
+              />
+            </>
+          ) : null}
         </SidebarContent>
-        <SidebarFooter className="px-3 pt-2 pb-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:items-center">
+        <SidebarFooter className="border-t border-sidebar-border px-3 pt-3 pb-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
           <SidebarUserFooter name={currentUser?.name ?? "Account"} />
         </SidebarFooter>
       </Sidebar>

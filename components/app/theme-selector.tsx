@@ -32,10 +32,12 @@ export function ThemeRadioGroup() {
         if (value) setTheme(value as ThemeValue)
       }}
     >
-      <DropdownMenuLabel>Theme</DropdownMenuLabel>
+      <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Theme
+      </DropdownMenuLabel>
       {themes.map((item) => (
         <DropdownMenuRadioItem key={item.value} value={item.value}>
-          <item.icon />
+          <item.icon className="size-4" />
           {item.label}
         </DropdownMenuRadioItem>
       ))}
@@ -58,12 +60,21 @@ export function ThemeSelector() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="icon-sm" aria-label="Select theme" />
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            aria-label="Select theme"
+          />
         }
       >
-        {mounted ? <ActiveIcon /> : <span className="size-3" />}
+        {mounted ? (
+          <ActiveIcon className="size-4" />
+        ) : (
+          <span className="size-4" />
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40">
+      <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuGroup>
           <ThemeRadioGroup />
         </DropdownMenuGroup>

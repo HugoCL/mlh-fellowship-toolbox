@@ -16,6 +16,10 @@ import {
 import type { Id } from "@/convex/_generated/dataModel"
 import { isPodCohort, isUmbrellaCohort } from "@/lib/cohort-access"
 import { dashboardPath } from "@/lib/cohort-routes"
+import { cn } from "@/lib/utils"
+
+export const shellSwitcherTriggerClass =
+  "h-auto min-h-8 w-full justify-between gap-2 rounded-md border-border bg-background py-2 text-left font-normal shadow-none hover:bg-muted/50"
 
 type CohortOption = {
   cohort: {
@@ -54,7 +58,7 @@ export function CohortSwitcher({
       <Button
         variant="outline"
         size="sm"
-        className="w-full justify-start"
+        className={cn(shellSwitcherTriggerClass, "justify-start")}
         nativeButton={false}
         render={<Link href="/cohorts" />}
       >
@@ -70,7 +74,7 @@ export function CohortSwitcher({
           <Button
             variant="outline"
             size="sm"
-            className="h-auto min-h-6 w-full justify-between gap-2 py-1.5"
+            className={shellSwitcherTriggerClass}
             aria-label={
               activeIsPod ? "Switch active pod" : "Switch active cohort"
             }
@@ -78,19 +82,19 @@ export function CohortSwitcher({
         }
       >
         <span className="min-w-0 flex-1 truncate text-left">
-          <span className="block truncate font-medium leading-tight">
+          <span className="block truncate text-sm font-medium leading-tight">
             {active.cohort.name}
           </span>
           <span className="block truncate text-xs leading-tight text-muted-foreground">
             {active.cohort.programCode} · {roleLabel(active)}
           </span>
         </span>
-        <ChevronsUpDownIcon data-icon="inline-end" />
+        <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
         <DropdownMenuGroup>
           <DropdownMenuLabel>
-            {activeIsPod ? "Active Pod" : "Active Cohort"}
+            {activeIsPod ? "Active pod" : "Active cohort"}
           </DropdownMenuLabel>
           {cohorts.map((item) => (
             <DropdownMenuItem
