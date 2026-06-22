@@ -480,13 +480,12 @@ export default function NotesViewerPage() {
                         No response
                       </p>
                     ) : (
-                      <p
-                        className={cn(
-                          "whitespace-pre-line leading-relaxed text-foreground",
-                          presenting ? "text-lg" : "text-base",
-                          section.isHighlight && "rounded-lg border border-primary/20 bg-primary/5 px-4 py-3",
-                        )}
-                      >
+                        <p
+                          className={cn(
+                            "whitespace-pre-line leading-relaxed text-foreground",
+                            presenting ? "text-lg" : "text-base",
+                          )}
+                        >
                         {section.content}
                       </p>
                     )}
