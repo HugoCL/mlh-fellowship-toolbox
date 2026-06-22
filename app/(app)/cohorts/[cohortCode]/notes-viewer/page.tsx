@@ -308,10 +308,6 @@ export default function NotesViewerPage() {
   }
 
   const total = order.length
-  const highlightSections =
-    currentNote?.sections.filter(
-      (section) => !section.isEmpty && section.isHighlight,
-    ) ?? []
 
   const board = (
     <div
@@ -438,89 +434,66 @@ export default function NotesViewerPage() {
         </aside>
 
         {currentNote ? (
-          <div className="grid min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
-            <div className="flex min-h-0 flex-col overflow-auto rounded-xl border border-border/70 bg-card/30 p-6">
-              <div className="flex flex-col gap-1 border-b border-border/60 pb-4">
-                <h2
-                  className={cn(
-                    "font-heading font-semibold tracking-tight text-balance",
-                    presenting ? "text-4xl" : "text-3xl",
-                  )}
-                >
-                  {currentNote.name}
-                </h2>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                  {currentNote.submittedAtLabel ? (
-                    <span className="inline-flex items-center gap-1">
-                      <ClockIcon className="size-3.5" />
-                      {currentNote.submittedAtLabel}
-                    </span>
-                  ) : null}
-                  {showEmail && currentNote.email ? (
-                    <span className="inline-flex items-center gap-1">
-                      <MailIcon className="size-3.5" />
-                      {currentNote.email}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-5 pt-5">
-                {currentNote.sections.map((section) => {
-                  if (section.isEmpty && !showEmpty) return null
-                  return (
-                    <div key={section.key} className="flex flex-col gap-1.5">
-                      <h3
-                        className={cn(
-                          "text-xs font-semibold tracking-wide uppercase",
-                          section.isHighlight
-                            ? "text-primary"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        {section.label}
-                      </h3>
-                      {section.isEmpty ? (
-                        <p className="text-sm text-muted-foreground/60 italic">
-                          No response
-                        </p>
-                      ) : (
-                        <p
-                          className={cn(
-                            "whitespace-pre-line leading-relaxed text-foreground",
-                            presenting ? "text-lg" : "text-base",
-                          )}
-                        >
-                          {section.content}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })}
+          <div className="flex min-h-0 flex-col overflow-auto rounded-xl border border-border/70 bg-card/30 p-6">
+            <div className="flex flex-col gap-1 border-b border-border/60 pb-4">
+              <h2
+                className={cn(
+                  "font-heading font-semibold tracking-tight text-balance",
+                  presenting ? "text-4xl" : "text-3xl",
+                )}
+              >
+                {currentNote.name}
+              </h2>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                {currentNote.submittedAtLabel ? (
+                  <span className="inline-flex items-center gap-1">
+                    <ClockIcon className="size-3.5" />
+                    {currentNote.submittedAtLabel}
+                  </span>
+                ) : null}
+                {showEmail && currentNote.email ? (
+                  <span className="inline-flex items-center gap-1">
+                    <MailIcon className="size-3.5" />
+                    {currentNote.email}
+                  </span>
+                ) : null}
               </div>
             </div>
 
-            <aside className="hidden min-h-0 flex-col gap-3 overflow-auto rounded-xl border border-primary/30 bg-primary/5 p-4 xl:flex">
-              <p className="text-[0.7rem] font-medium tracking-wide text-primary uppercase">
-                Talk about
-              </p>
-              {highlightSections.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No highlighted items this round.
-                </p>
-              ) : (
-                highlightSections.map((section) => (
-                  <div key={section.key} className="flex flex-col gap-1">
-                    <h4 className="text-xs font-semibold text-foreground">
+            <div className="flex flex-col gap-5 pt-5">
+              {currentNote.sections.map((section) => {
+                if (section.isEmpty && !showEmpty) return null
+                return (
+                  <div key={section.key} className="flex flex-col gap-1.5">
+                    <h3
+                      className={cn(
+                        "text-xs font-semibold tracking-wide uppercase",
+                        section.isHighlight
+                          ? "text-primary"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {section.label}
-                    </h4>
-                    <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                      {section.content}
-                    </p>
+                    </h3>
+                    {section.isEmpty ? (
+                      <p className="text-sm text-muted-foreground/60 italic">
+                        No response
+                      </p>
+                    ) : (
+                      <p
+                        className={cn(
+                          "whitespace-pre-line leading-relaxed text-foreground",
+                          presenting ? "text-lg" : "text-base",
+                          section.isHighlight && "rounded-lg border border-primary/20 bg-primary/5 px-4 py-3",
+                        )}
+                      >
+                        {section.content}
+                      </p>
+                    )}
                   </div>
-                ))
-              )}
-            </aside>
+                )
+              })}
+            </div>
           </div>
         ) : null}
       </div>
