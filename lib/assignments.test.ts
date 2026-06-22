@@ -86,22 +86,31 @@ describe("generateMentorAssignments", () => {
     ).toThrow("Need at least 2 mentors and 2 rounds")
   })
 
-  it("throws when fellows exceed weekly mentor capacity", () => {
-    expect(() =>
-      generateMentorAssignments({
-        fellowIds: [
-          fellow("f1"),
-          fellow("f2"),
-          fellow("f3"),
-          fellow("f4"),
-          fellow("f5"),
-          fellow("f6"),
-          fellow("f7"),
-        ],
-        mentorIds: [mentor("m1"), mentor("m2"), mentor("m3")],
-        rounds: twoRounds,
-      }),
-    ).toThrow("Too many fellows (7) for 3 mentors at max 2 per week")
+  it("still generates assignments when fellows exceed a two-per-mentor weekly target", () => {
+    const assignments = generateMentorAssignments({
+      fellowIds: [
+        fellow("f1"),
+        fellow("f2"),
+        fellow("f3"),
+        fellow("f4"),
+        fellow("f5"),
+        fellow("f6"),
+        fellow("f7"),
+      ],
+      mentorIds: [mentor("m1"), mentor("m2"), mentor("m3")],
+      rounds: [
+        { roundNumber: 1, targetWeekLabel: "Week 1", targetWeekStart: 1 },
+        { roundNumber: 2, targetWeekLabel: "Week 2", targetWeekStart: 2 },
+        { roundNumber: 3, targetWeekLabel: "Week 3", targetWeekStart: 3 },
+      ],
+    })
+
+    expect(assignments).toHaveLength(21)
+
+    const weekOneLoad = mentorLoadPerRound(assignments, 1)
+    expect(weekOneLoad.get("m1")).toBe(3)
+    expect(weekOneLoad.get("m2")).toBe(2)
+    expect(weekOneLoad.get("m3")).toBe(2)
   })
 
   it("throws when there are more mentors than rounds", () => {
@@ -134,7 +143,7 @@ describe("generateMentorAssignments", () => {
     }
   })
 
-  it("limits each mentor to two fellows per round", () => {
+  it("distributes fellows across mentors each round", () => {
     const assignments = generateMentorAssignments({
       fellowIds: [
         fellow("f1"),
@@ -154,8 +163,9 @@ describe("generateMentorAssignments", () => {
 
     for (const roundNumber of [1, 2, 3]) {
       const load = mentorLoadPerRound(assignments, roundNumber)
+      expect(load.size).toBe(3)
       for (const count of load.values()) {
-        expect(count).toBeLessThanOrEqual(2)
+        expect(count).toBeGreaterThan(0)
       }
     }
   })
