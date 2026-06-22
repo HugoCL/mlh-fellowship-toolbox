@@ -1,10 +1,18 @@
+import { mkdir } from "node:fs/promises"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 import { expect, test } from "@playwright/test"
 import { AUTH_ROUTES } from "../components/auth/auth-routes"
 import { FELLOW_AUTH_STATE } from "../e2e/helpers/constants"
 import { waitForAuthenticatedApp } from "../e2e/helpers/wait-for-app"
 
-const ARTIFACTS = "/opt/cursor/artifacts/ui-verify"
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const ARTIFACTS =
+  process.env.UI_VERIFY_ARTIFACTS ?? path.join(__dirname, "artifacts")
+
+test.beforeAll(async () => {
+  await mkdir(ARTIFACTS, { recursive: true })
+})
 // Fellow pod program code 26.SUM.B.5.1 → slug 26-SUM-B-5-1
 const COHORT = "26-SUM-B-5-1"
 

@@ -4,6 +4,12 @@ import { defineConfig, devices } from "@playwright/test"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+try {
+  process.loadEnvFile(path.join(__dirname, "..", ".env.local"))
+} catch {
+  // .env.local is optional in CI when env vars are injected directly.
+}
+
 export default defineConfig({
   testDir: __dirname,
   outputDir: path.join(__dirname, "test-results"),

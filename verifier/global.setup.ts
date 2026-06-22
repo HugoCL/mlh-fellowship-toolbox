@@ -21,6 +21,18 @@ setup.setTimeout(90_000)
 setup("global setup", async () => {
   await mkdir(authDir, { recursive: true })
   await clerkSetup({ dotenv: false })
+
+  if (!process.env.CLERK_SECRET_KEY) {
+    throw new Error("CLERK_SECRET_KEY is required for E2E tests.")
+  }
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    throw new Error(
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is required for E2E tests.",
+    )
+  }
+  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL is required for E2E tests.")
+  }
 })
 
 setup("authenticate admin", async ({ page }) => {
