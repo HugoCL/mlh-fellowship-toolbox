@@ -28,6 +28,26 @@ export type MentorAssignmentInput = {
   roundNumber: number
 }
 
+function splitRoundsIntoWindows(
+  rounds: MentorRoundInput[],
+  windowCount: number,
+): MentorRoundInput[][] {
+  const sorted = [...rounds].sort((a, b) => a.roundNumber - b.roundNumber)
+  const windows: MentorRoundInput[][] = Array.from(
+    { length: windowCount },
+    () => [],
+  )
+  const baseSize = Math.floor(sorted.length / windowCount)
+  const remainder = sorted.length % windowCount
+  let index = 0
+  for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
+    const size = baseSize + (windowIndex < remainder ? 1 : 0)
+    windows[windowIndex] = sorted.slice(index, index + size)
+    index += size
+  }
+  return windows
+}
+
 export function generateMentorAssignments(args: {
   fellowIds: Id<"fellows">[]
   mentorIds: Id<"mentors">[]
@@ -44,19 +64,27 @@ export function generateMentorAssignments(args: {
     )
   }
 
-  const sortedFellows = [...fellowIds].sort((a, b) => a.localeCompare(b))
-  const sortedMentors = [...mentorIds].sort((a, b) => a.localeCompare(b))
+  const fellows = [...fellowIds]
+  const mentors = [...mentorIds]
   const assignments: MentorAssignmentInput[] = []
+  const roundWindows = splitRoundsIntoWindows(rounds, mentors.length)
 
-  // Each fellow meets each mentor once. Extra meeting weeks stay empty.
-  const assignmentRounds = rounds.slice(0, sortedMentors.length)
+  // Each fellow meets each mentor once. Spread meetings across program windows
+  // so mentors are not overloaded in consecutive weeks.
+  for (const [windowIndex, windowRounds] of roundWindows.entries()) {
+    if (windowRounds.length === 0) {
+      continue
+    }
 
-  for (const [roundIndex, round] of assignmentRounds.entries()) {
-    for (const [fellowIndex, fellowId] of sortedFellows.entries()) {
-      const mentorId =
-        sortedMentors[(fellowIndex + roundIndex) % sortedMentors.length]
+    for (const [fellowIndex, fellowId] of fellows.entries()) {
+      const mentorId = mentors[(fellowIndex + windowIndex) % mentors.length]
+      const roundInWindow = Math.min(
+        Math.floor((fellowIndex * windowRounds.length) / fellows.length),
+        windowRounds.length - 1,
+      )
+      const round = windowRounds[roundInWindow]
 
-      if (!mentorId) {
+      if (!mentorId || !round) {
         throw new Error("Unable to assign mentor")
       }
 

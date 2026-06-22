@@ -15,6 +15,10 @@ import {
 import { getProgramWeeks, isSameCalendarDay } from "./lib/programWeeks"
 import { fellowValidator, mentorValidator } from "./lib/validators"
 
+function compareByName(a: { name: string }, b: { name: string }): number {
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+}
+
 function normalizeDiscordUsername(input: string): string {
   const trimmed = input.trim().replace(/^@+/, "")
   if (!trimmed) {
@@ -258,11 +262,13 @@ export const generateAssignments = podManagementMutation({
       .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
       .collect()
 
+    const sortedFellows = fellows.sort(compareByName)
+    const sortedActiveMentors = activeMentors.sort(compareByName)
     const sortedRounds = rounds.sort((a, b) => a.roundNumber - b.roundNumber)
 
     const generated = generateMentorAssignments({
-      fellowIds: fellows.map((fellow) => fellow._id),
-      mentorIds: activeMentors.map((mentor) => mentor._id),
+      fellowIds: sortedFellows.map((fellow) => fellow._id),
+      mentorIds: sortedActiveMentors.map((mentor) => mentor._id),
       rounds: sortedRounds.map((round) => ({
         roundNumber: round.roundNumber,
         targetWeekLabel: round.targetWeekLabel,
@@ -334,8 +340,8 @@ export const listAssignments = cohortQuery({
       .collect()
 
     return {
-      fellows,
-      mentors,
+      fellows: fellows.sort(compareByName),
+      mentors: mentors.sort(compareByName),
       rounds: rounds.sort((a, b) => a.roundNumber - b.roundNumber),
       assignments,
     }

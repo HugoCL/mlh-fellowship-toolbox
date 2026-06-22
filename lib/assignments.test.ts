@@ -27,6 +27,31 @@ function mentorLoadPerRound(
   return load
 }
 
+function fellowRoundNumbers(
+  assignments: ReturnType<typeof generateMentorAssignments>,
+  fellowId: string,
+): number[] {
+  return assignments
+    .filter((item) => item.fellowId === fellowId)
+    .map((item) => item.roundNumber)
+    .sort((a, b) => a - b)
+}
+
+function minRoundSeparation(roundNumbers: number[]): number {
+  if (roundNumbers.length < 2) {
+    return Number.POSITIVE_INFINITY
+  }
+  let minGap = Number.POSITIVE_INFINITY
+  for (let index = 1; index < roundNumbers.length; index += 1) {
+    const previous = roundNumbers[index - 1]
+    const current = roundNumbers[index]
+    if (previous !== undefined && current !== undefined) {
+      minGap = Math.min(minGap, current - previous)
+    }
+  }
+  return minGap
+}
+
 describe("generatePeerPairs", () => {
   it("returns no pairs for an empty list", () => {
     expect(generatePeerPairs([])).toEqual([])
@@ -315,7 +340,7 @@ describe("generateMentorAssignments", () => {
     }
   })
 
-  it("assigns each fellow once per mentor and leaves extra weeks empty", () => {
+  it("spreads assignments across generated weeks instead of only the first mentor rounds", () => {
     const mentorIds = [mentor("m1"), mentor("m2"), mentor("m3")]
     const fellowIds = Array.from({ length: 14 }, (_, index) =>
       fellow(`f${index + 1}`),
@@ -345,11 +370,81 @@ describe("generateMentorAssignments", () => {
       expect(
         new Set(fellowAssignments.map((item) => item.roundNumber)).size,
       ).toBe(mentorIds.length)
+      expect(
+        minRoundSeparation(fellowRoundNumbers(assignments, fellowId)),
+      ).toBeGreaterThanOrEqual(2)
     }
 
     const assignedRoundNumbers = new Set(
       assignments.map((item) => item.roundNumber),
     )
-    expect(assignedRoundNumbers).toEqual(new Set([1, 2, 3]))
+    expect(assignedRoundNumbers).toEqual(new Set([1, 2, 3, 4, 5, 6, 7]))
+  })
+
+  it("spreads two-mentor schedules across early and late program windows", () => {
+    const mentorIds = [mentor("m1"), mentor("m2")]
+    const fellowIds = Array.from({ length: 11 }, (_, index) =>
+      fellow(`f${index + 1}`),
+    )
+    const rounds = Array.from({ length: 10 }, (_, index) => ({
+      roundNumber: index + 1,
+      targetWeekLabel: `Week ${index + 1}`,
+      targetWeekStart: index + 1,
+    }))
+
+    const assignments = generateMentorAssignments({
+      fellowIds,
+      mentorIds,
+      rounds,
+    })
+
+    expect(assignments).toHaveLength(22)
+
+    const assignedRoundNumbers = new Set(
+      assignments.map((item) => item.roundNumber),
+    )
+    expect(assignedRoundNumbers.size).toBeGreaterThan(2)
+    expect(Math.min(...assignedRoundNumbers)).toBeLessThanOrEqual(5)
+    expect(Math.max(...assignedRoundNumbers)).toBeGreaterThanOrEqual(6)
+
+    for (const fellowId of fellowIds) {
+      const roundNumbers = fellowRoundNumbers(assignments, fellowId)
+      expect(roundNumbers).toHaveLength(2)
+      expect(minRoundSeparation(roundNumbers)).toBeGreaterThanOrEqual(4)
+    }
+  })
+
+  it("uses early, middle, and late windows for three mentors", () => {
+    const mentorIds = [mentor("m1"), mentor("m2"), mentor("m3")]
+    const fellowIds = Array.from({ length: 6 }, (_, index) =>
+      fellow(`f${index + 1}`),
+    )
+    const rounds = Array.from({ length: 9 }, (_, index) => ({
+      roundNumber: index + 1,
+      targetWeekLabel: `Week ${index + 1}`,
+      targetWeekStart: index + 1,
+    }))
+
+    const assignments = generateMentorAssignments({
+      fellowIds,
+      mentorIds,
+      rounds,
+    })
+
+    const assignedRoundNumbers = [
+      ...new Set(assignments.map((a) => a.roundNumber)),
+    ].sort((a, b) => a - b)
+
+    expect(assignedRoundNumbers.some((round) => round <= 3)).toBe(true)
+    expect(assignedRoundNumbers.some((round) => round >= 4 && round <= 6)).toBe(
+      true,
+    )
+    expect(assignedRoundNumbers.some((round) => round >= 7)).toBe(true)
+
+    for (const fellowId of fellowIds) {
+      expect(
+        minRoundSeparation(fellowRoundNumbers(assignments, fellowId)),
+      ).toBeGreaterThanOrEqual(2)
+    }
   })
 })
