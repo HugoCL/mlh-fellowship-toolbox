@@ -48,7 +48,10 @@ export function generateMentorAssignments(args: {
   const sortedMentors = [...mentorIds].sort((a, b) => a.localeCompare(b))
   const assignments: MentorAssignmentInput[] = []
 
-  for (const [roundIndex, round] of rounds.entries()) {
+  // Each fellow meets each mentor once. Extra meeting weeks stay empty.
+  const assignmentRounds = rounds.slice(0, sortedMentors.length)
+
+  for (const [roundIndex, round] of assignmentRounds.entries()) {
     for (const [fellowIndex, fellowId] of sortedFellows.entries()) {
       const mentorId =
         sortedMentors[(fellowIndex + roundIndex) % sortedMentors.length]
