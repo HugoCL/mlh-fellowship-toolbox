@@ -13,10 +13,13 @@ import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
+import { EmptyState } from "@/components/app/empty-state"
+import { InfoCallout } from "@/components/app/info-callout"
 import { MentorProfileEditDialog } from "@/components/app/mentor-profile-edit-dialog"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
+import { PageSkeleton, SkeletonCardGrid } from "@/components/app/page-skeleton"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { SectionHeader } from "@/components/app/section-header"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -134,12 +137,13 @@ export default function DirectoryPage() {
 
   if (isLoading || directory === undefined) {
     return (
-      <>
-        <PageHeader title="Directory" description="Loading pod directory…" />
-        <PageBody>
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        </PageBody>
-      </>
+      <PageSkeleton
+        title="Directory"
+        description="Loading pod directory…"
+        width="wide"
+      >
+        <SkeletonCardGrid count={6} columns={3} />
+      </PageSkeleton>
     )
   }
 
@@ -150,12 +154,10 @@ export default function DirectoryPage() {
           title="Directory"
           description="Pod directory is available inside a pod."
         />
-        <PageBody>
-          <Alert>
-            <AlertDescription>
-              Select a pod from the sidebar to view its directory.
-            </AlertDescription>
-          </Alert>
+        <PageBody width="wide">
+          <InfoCallout variant="neutral">
+            Select a pod from the sidebar to view its directory.
+          </InfoCallout>
         </PageBody>
       </>
     )
@@ -175,20 +177,18 @@ export default function DirectoryPage() {
           ) : undefined
         }
       />
-      <PageBody>
-        <div className="flex w-full flex-col gap-8">
+      <PageBody width="wide">
+        <div className="flex w-full flex-col gap-6">
           {needsProfileCompletion ? (
-            <section className="flex max-w-xl flex-col gap-3">
-              <div>
-                <h2 className="font-heading text-lg font-semibold">
-                  Complete your profile
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {setupScheduling
+            <section className="flex max-w-xl flex-col gap-4">
+              <SectionHeader
+                title="Complete your profile"
+                description={
+                  setupScheduling
                     ? "Welcome — finish onboarding so others in the pod can reach you."
-                    : "Add your contact details so others in the pod can find and book time with you."}
-                </p>
-              </div>
+                    : "Add your contact details so others in the pod can find and book time with you."
+                }
+              />
               <div className="flex flex-col gap-4">
                 {needsOwnSchedulingLink ? (
                   <SchedulingLinkSetup
@@ -288,7 +288,7 @@ export default function DirectoryPage() {
 
         {lastInviteLink ? (
           <div className="flex flex-col gap-4">
-            <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
               <p className="text-sm font-medium">Invitation link</p>
               <p className="mt-1 break-all text-sm text-muted-foreground">
                 {lastInviteLink}
@@ -418,16 +418,14 @@ function PendingInvitesList({
   }>
 }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="font-heading text-lg font-semibold">
-        Pending invitations
-      </h2>
-      <div className="rounded-lg border border-border/70">
-        <ul className="divide-y divide-border/70">
+    <section className="flex flex-col gap-4">
+      <SectionHeader title="Pending invitations" />
+      <div className="overflow-hidden rounded-lg border border-border">
+        <ul className="divide-y divide-border">
           {invites.map((invite) => (
             <li
               key={invite._id}
-              className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
+              className="flex flex-wrap items-center gap-3 bg-card px-4 py-3 text-sm"
             >
               <span className="font-medium">{invite.email}</span>
               <Badge variant="outline">{roleBadgeLabel(invite.role)}</Badge>
@@ -476,13 +474,12 @@ function DirectoryGrid({
 }) {
   return (
     <section className="flex w-full flex-col gap-4">
-      <div>
-        <h2 className="font-heading text-lg font-semibold">People</h2>
-      </div>
+      <SectionHeader title="People" />
       {people.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
-          No people in this pod yet.
-        </div>
+        <EmptyState
+          title="No people in this pod yet"
+          description="Members will appear here once they join or are invited."
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {people.map((person) => (
@@ -511,7 +508,7 @@ function DirectoryCard({
   const showEditMentor = canManageMentors && person.role === "mentor"
 
   return (
-    <Card className="gap-0 p-5 transition-shadow hover:ring-foreground/20 hover:shadow-sm">
+    <Card className="gap-0 p-5">
       <div className="flex items-start gap-4">
         <Avatar size="lg" className="size-12">
           {person.imageUrl ? (
@@ -543,14 +540,14 @@ function DirectoryCard({
             {person.pendingInvite ? (
               <Badge
                 variant="outline"
-                className="text-amber-600 dark:text-amber-400"
+                className="border-warning/30 text-warning"
               >
                 Invite pending
               </Badge>
             ) : person.joined ? (
               <Badge
                 variant="outline"
-                className="text-emerald-600 dark:text-emerald-400"
+                className="border-success/25 text-success"
               >
                 Active
               </Badge>
@@ -559,7 +556,7 @@ function DirectoryCard({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 text-xs/relaxed text-muted-foreground">
+      <div className="mt-4 flex flex-col gap-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <MailIcon className="size-3.5 shrink-0" />
           {person.email ? (
