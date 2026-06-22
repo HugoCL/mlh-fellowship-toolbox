@@ -330,11 +330,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           icon: ListTodoIcon,
         },
         {
-          href: cohortPath(workspaceProgramCode, "notes-viewer"),
-          label: "Notes Viewer",
-          icon: NotebookPenIcon,
-        },
-        {
           href: cohortPath(workspaceProgramCode, "notifications"),
           label: "Notifications",
           icon: BellIcon,
@@ -373,6 +368,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   ),
                   label: "Pod Settings",
                   icon: SettingsIcon,
+                },
+                {
+                  href: cohortPath(
+                    isCohortAdmin && selectedPodProgramCode
+                      ? selectedPodProgramCode
+                      : activeProgramCode,
+                    "notes-viewer",
+                  ),
+                  label: "Notes Viewer",
+                  icon: NotebookPenIcon,
                 },
               ]
             : []),

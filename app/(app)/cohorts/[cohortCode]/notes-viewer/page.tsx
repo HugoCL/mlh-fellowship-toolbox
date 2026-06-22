@@ -17,7 +17,9 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { EmptyState } from "@/components/app/empty-state"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
+import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -31,6 +33,8 @@ import {
   sortNotesByName,
   sortNotesBySubmission,
 } from "@/lib/lms-notes-viewer"
+import { useCohortRoute } from "@/lib/use-cohort-route"
+import { useIsImpersonating } from "@/lib/use-impersonation"
 import { cn } from "@/lib/utils"
 
 function buildCopyText(note: FellowNote): string {
@@ -49,6 +53,24 @@ function buildCopyText(note: FellowNote): string {
 }
 
 export default function NotesViewerPage() {
+  const {
+    cohortData: cohort,
+    settingsProgramCode,
+    isLoading,
+  } = useCohortRoute()
+  const { isImpersonating } = useIsImpersonating()
+
+  const canAccess =
+    !isImpersonating &&
+    cohort?.role === "podLeader" &&
+    (cohort.canManagePod || cohort.isUmbrellaViewer)
+
+  const isUmbrellaAdminBlocked =
+    cohort?.role === "podLeader" &&
+    !cohort.canManagePod &&
+    cohort.hasChildPods &&
+    !cohort.isUmbrellaViewer
+
   const [rawInput, setRawInput] = useState("")
   const [parsed, setParsed] = useState<ParsedNotes | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -195,6 +217,50 @@ export default function NotesViewerPage() {
     return () =>
       document.removeEventListener("fullscreenchange", onFullscreenChange)
   }, [])
+
+  if (isLoading || cohort === undefined) {
+    return (
+      <>
+        <PageHeader title="Notes Viewer" description="Loading…" />
+        <PageBody>
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </PageBody>
+      </>
+    )
+  }
+
+  if (isUmbrellaAdminBlocked) {
+    return (
+      <>
+        <PageHeader
+          title="Notes Viewer"
+          description="Present retro and standup notes during meetings."
+        />
+        <PageBody>
+          <UmbrellaAdminActivityNotice
+            settingsProgramCode={settingsProgramCode ?? ""}
+          />
+        </PageBody>
+      </>
+    )
+  }
+
+  if (!canAccess) {
+    return (
+      <>
+        <PageHeader
+          title="Notes Viewer"
+          description="Pod leader access required."
+        />
+        <PageBody>
+          <EmptyState
+            title="Pod leaders only"
+            description="Notes Viewer is for pod leaders to present retro and standup submissions during meetings."
+          />
+        </PageBody>
+      </>
+    )
+  }
 
   if (!parsed) {
     return (
