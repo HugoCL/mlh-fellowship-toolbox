@@ -3,15 +3,15 @@
 import { useMutation } from "convex/react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { SectionHeader } from "@/components/app/section-header"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -168,9 +168,9 @@ export function CohortGeneralSettingsForm({
             disabled
             spellCheck={false}
           />
-          <p className="text-xs text-muted-foreground">
+          <FieldDescription>
             Program codes cannot be changed after creation.
-          </p>
+          </FieldDescription>
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
@@ -258,12 +258,14 @@ export function CohortGeneralSettingsForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">General</CardTitle>
-        <CardDescription>
-          {variant === "umbrella"
-            ? "Cohort name, program dates, and status."
-            : "Pod display name and program dates for this pod."}
-        </CardDescription>
+        <SectionHeader
+          title="General"
+          description={
+            variant === "umbrella"
+              ? "Cohort name, program dates, and status."
+              : "Pod display name and program dates for this pod."
+          }
+        />
       </CardHeader>
       <CardContent>{form}</CardContent>
     </Card>

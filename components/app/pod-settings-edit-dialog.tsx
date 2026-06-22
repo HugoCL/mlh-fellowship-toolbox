@@ -27,7 +27,7 @@ export function PodSettingsEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="gap-4 sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit pod</DialogTitle>
           <DialogDescription>
