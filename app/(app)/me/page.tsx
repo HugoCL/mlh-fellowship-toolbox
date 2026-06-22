@@ -1,13 +1,15 @@
 import { Suspense } from "react"
+import { PageSkeleton } from "@/components/app/page-skeleton"
 import MyTasksPageClient from "./me-client"
 
 export default function MyTasksPage() {
   return (
     <Suspense
       fallback={
-        <div className="px-6 py-6 text-sm text-muted-foreground">
-          Loading tasks…
-        </div>
+        <PageSkeleton
+          title="My Tasks"
+          description="Your personal fellowship checklist."
+        />
       }
     >
       <MyTasksPageClient />

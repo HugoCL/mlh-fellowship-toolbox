@@ -11,15 +11,9 @@ import {
   DashboardLoadingShell,
   DashboardSkeleton,
 } from "@/components/app/dashboard-skeleton"
+import { EmptyState } from "@/components/app/empty-state"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { Button } from "@/components/ui/button"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty"
 import { api } from "@/convex/_generated/api"
 import {
   cohortDisplayTitle,
@@ -111,21 +105,16 @@ export default function DashboardPageClient() {
           title="Dashboard"
           description="Your fellowship home base."
         />
-        <PageBody>
-          <Empty>
-            <EmptyHeader>
-              <EmptyTitle>No cohort yet</EmptyTitle>
-              <EmptyDescription>
-                Create a cohort to start tracking 1:1s, mentors, demos, and
-                talks.
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
+        <PageBody width="wide">
+          <EmptyState
+            title="No cohort yet"
+            description="Create a cohort to start tracking 1:1s, mentors, demos, and talks."
+            action={
               <Button nativeButton={false} render={<Link href="/cohorts" />}>
                 Create cohort
               </Button>
-            </EmptyContent>
-          </Empty>
+            }
+          />
         </PageBody>
       </>
     )
@@ -160,7 +149,7 @@ export default function DashboardPageClient() {
           title={cohortDisplayTitle(activeCohort.cohort)}
           description={dashboardDescription()}
         />
-        <PageBody>
+        <PageBody width="wide">
           <UmbrellaOverviewPanel
             umbrellaProgramCode={activeCohort.cohort.programCode}
             groups={groups ?? []}
@@ -183,7 +172,7 @@ export default function DashboardPageClient() {
         title={cohortDisplayTitle(headerCohort)}
         description={dashboardDescription()}
       />
-      <PageBody>
+      <PageBody width="wide">
         {insights === undefined ? (
           <DashboardSkeleton />
         ) : insights.view === "leader" ? (

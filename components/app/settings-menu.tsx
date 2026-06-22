@@ -20,14 +20,14 @@ export function SettingsMenu() {
           <Button
             variant="ghost"
             size="icon-sm"
-            className="shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="shrink-0 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
             aria-label="Settings"
           />
         }
       >
-        <SettingsIcon />
+        <SettingsIcon className="size-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="left" align="end" className="w-44">
+      <DropdownMenuContent side="top" align="end" className="w-44">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Settings</DropdownMenuLabel>
         </DropdownMenuGroup>

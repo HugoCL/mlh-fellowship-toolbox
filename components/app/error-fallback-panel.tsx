@@ -41,7 +41,7 @@ function ErrorFallbackContent({
           "An unexpected error occurred. Try again or return home."}
       </p>
       {error.digest ? (
-        <p className="mt-1 text-[10px] text-muted-foreground/70">
+        <p className="mt-1 font-mono text-xs text-muted-foreground">
           Reference: {error.digest}
         </p>
       ) : null}

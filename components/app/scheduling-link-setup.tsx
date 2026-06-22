@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { InfoCallout } from "@/components/app/info-callout"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
+import { cn } from "@/lib/utils"
 
 type SchedulingLinkSetupProps = {
   calendlyUrl?: string | null
@@ -29,19 +30,16 @@ export function SchedulingLinkSetup({
 
   return (
     <section
-      className={
-        showAction
-          ? "rounded-lg border border-primary/30 bg-primary/5 p-4"
-          : "rounded-lg border border-border/70 p-4"
-      }
+      className={cn(
+        "rounded-lg border p-4",
+        showAction ? "border-primary/30 bg-primary/5" : "border-border bg-card",
+      )}
     >
       {showAction ? (
-        <Alert className="mb-4 border-0 bg-transparent p-0">
-          <AlertDescription>
-            Add your scheduling link so podmates can book time with you. This is
-            required to complete onboarding.
-          </AlertDescription>
-        </Alert>
+        <InfoCallout variant="info" className="mb-4">
+          Add your scheduling link so podmates can book time with you. This is
+          required to complete onboarding.
+        </InfoCallout>
       ) : null}
 
       <form

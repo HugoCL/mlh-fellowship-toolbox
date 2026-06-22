@@ -14,6 +14,8 @@ import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
+import { PageSkeleton, SkeletonList } from "@/components/app/page-skeleton"
+import { SectionHeader } from "@/components/app/section-header"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import {
   AlertDialog,
@@ -28,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -241,18 +243,12 @@ export default function ActionItemsPage() {
 
   if (isLoading || data === undefined) {
     return (
-      <>
-        <PageHeader
-          title="Action Items"
-          description="Assign tasks and track completion."
-        />
-        <PageBody>
-          <EmptyState
-            title="Loading…"
-            description="Fetching action items for this pod."
-          />
-        </PageBody>
-      </>
+      <PageSkeleton
+        title="Action Items"
+        description="Assign tasks and track completion."
+      >
+        <SkeletonList count={4} />
+      </PageSkeleton>
     )
   }
 
@@ -299,7 +295,7 @@ export default function ActionItemsPage() {
       />
       <PageBody>
         {showLeaderView && data.view === "leader" ? (
-          <>
+          <div className="flex flex-col gap-6">
             <PageToolbar title="Pod action items">
               <Button onClick={openCreateDialog}>
                 <PlusIcon className="size-4" />
@@ -311,6 +307,12 @@ export default function ActionItemsPage() {
               <EmptyState
                 title="No action items yet"
                 description="Create an action item to assign work to fellows in your pod."
+                action={
+                  <Button onClick={openCreateDialog}>
+                    <PlusIcon className="size-4" />
+                    Create action item
+                  </Button>
+                }
               />
             ) : (
               <ul className="flex flex-col gap-4">
@@ -325,19 +327,12 @@ export default function ActionItemsPage() {
 
                     return (
                       <li key={item._id}>
-                        <Card>
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <CardTitle className="text-base">
-                                  {item.title}
-                                </CardTitle>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                  Due {formatDateTime(item.dueAt)} ·{" "}
-                                  {completedCount}/{targetCount} complete
-                                </p>
-                              </div>
-                              <div className="flex shrink-0 items-center gap-1">
+                        <Card className="gap-4 p-5">
+                          <SectionHeader
+                            title={item.title}
+                            description={`Due ${formatDateTime(item.dueAt)} · ${completedCount}/${targetCount} complete`}
+                            actions={
+                              <>
                                 <Button
                                   variant="ghost"
                                   size="icon-sm"
@@ -382,66 +377,63 @@ export default function ActionItemsPage() {
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
-                              </div>
-                            </div>
-                            <p className="text-sm">{item.message}</p>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              <div>
-                                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                  Completed ({completed.length})
+                              </>
+                            }
+                          />
+                          <p className="text-sm">{item.message}</p>
+                          <div className="grid gap-6 sm:grid-cols-2">
+                            <div className="flex flex-col gap-3">
+                              <SectionHeader
+                                title={`Completed (${completed.length})`}
+                              />
+                              {completed.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                  No one yet
                                 </p>
-                                {completed.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground">
-                                    No one yet
-                                  </p>
-                                ) : (
-                                  <ul className="space-y-1.5">
-                                    {completed.map((status) => (
-                                      <li
-                                        key={status.fellowId}
-                                        className="flex items-center gap-2 text-sm"
-                                      >
-                                        <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
-                                        <span className="font-medium">
-                                          {status.name}
+                              ) : (
+                                <ul className="space-y-2">
+                                  {completed.map((status) => (
+                                    <li
+                                      key={status.fellowId}
+                                      className="flex items-center gap-2 text-sm"
+                                    >
+                                      <CheckCircle2Icon className="size-4 shrink-0 text-success" />
+                                      <span className="font-medium">
+                                        {status.name}
+                                      </span>
+                                      {status.completedAt ? (
+                                        <span className="text-muted-foreground">
+                                          · {formatDateTime(status.completedAt)}
                                         </span>
-                                        {status.completedAt ? (
-                                          <span className="text-muted-foreground">
-                                            ·{" "}
-                                            {formatDateTime(status.completedAt)}
-                                          </span>
-                                        ) : null}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </div>
-                              <div>
-                                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                  Not completed ({pending.length})
-                                </p>
-                                {pending.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground">
-                                    Everyone done
-                                  </p>
-                                ) : (
-                                  <ul className="space-y-1.5">
-                                    {pending.map((status) => (
-                                      <li
-                                        key={status.fellowId}
-                                        className="flex items-center gap-2 text-sm"
-                                      >
-                                        <CircleIcon className="size-4 shrink-0 text-muted-foreground" />
-                                        <span>{status.name}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </div>
+                                      ) : null}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                             </div>
-                          </CardContent>
+                            <div className="flex flex-col gap-3">
+                              <SectionHeader
+                                title={`Not completed (${pending.length})`}
+                              />
+                              {pending.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                  Everyone done
+                                </p>
+                              ) : (
+                                <ul className="space-y-2">
+                                  {pending.map((status) => (
+                                    <li
+                                      key={status.fellowId}
+                                      className="flex items-center gap-2 text-sm"
+                                    >
+                                      <CircleIcon className="size-4 shrink-0 text-muted-foreground" />
+                                      <span>{status.name}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          </div>
                         </Card>
                       </li>
                     )
@@ -449,93 +441,84 @@ export default function ActionItemsPage() {
                 )}
               </ul>
             )}
-          </>
+          </div>
         ) : data.view === "fellow" ? (
-          <div className="flex flex-col gap-8">
-            <section className="flex flex-col gap-3">
-              <div>
-                <h2 className="font-heading text-lg font-semibold">Open</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {data.openItems.length === 0
+          <div className="flex flex-col gap-6">
+            <section className="flex flex-col gap-4">
+              <SectionHeader
+                title="Open"
+                description={
+                  data.openItems.length === 0
                     ? "You're caught up on action items."
-                    : `${data.openItems.length} item${data.openItems.length === 1 ? "" : "s"} waiting on you.`}
-                </p>
-              </div>
+                    : `${data.openItems.length} item${data.openItems.length === 1 ? "" : "s"} waiting on you.`
+                }
+              />
 
               {data.openItems.length === 0 ? (
-                <Card>
-                  <CardContent className="flex items-center gap-3 py-6">
-                    <CheckCircle2Icon className="size-5 text-primary" />
-                    <p className="text-sm text-muted-foreground">
-                      No open action items right now.
-                    </p>
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  title="No open action items"
+                  description="You're all caught up for now."
+                />
               ) : (
-                <ul className="grid gap-3 sm:grid-cols-2">
+                <ul className="grid gap-4 sm:grid-cols-2">
                   {data.openItems.map(({ item, isOverdue }) => (
                     <li key={item._id}>
                       <Card
                         className={cn(
+                          "gap-4 p-5",
                           isOverdue && "border-destructive/40 bg-destructive/5",
                         )}
                       >
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between gap-3">
-                            <CardTitle className="text-base">
-                              {item.title}
-                            </CardTitle>
-                            {isOverdue ? (
+                        <SectionHeader
+                          title={item.title}
+                          description={`Due ${formatDateTime(item.dueAt)}`}
+                          actions={
+                            isOverdue ? (
                               <Badge variant="destructive">Overdue</Badge>
-                            ) : null}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Due {formatDateTime(item.dueAt)}
-                          </p>
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-3">
-                          <p className="text-sm">{item.message}</p>
-                          <div className="flex flex-wrap items-center gap-3">
-                            {item.linkUrl ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                nativeButton={false}
-                                render={
-                                  <Link
-                                    href={item.linkUrl}
-                                    target={
-                                      item.linkUrl.startsWith("http")
-                                        ? "_blank"
-                                        : undefined
-                                    }
-                                    rel={
-                                      item.linkUrl.startsWith("http")
-                                        ? "noopener noreferrer"
-                                        : undefined
-                                    }
-                                  />
-                                }
-                              >
-                                Open link
-                                <ExternalLinkIcon className="size-3.5" />
-                              </Button>
-                            ) : null}
-                            <div className="flex cursor-pointer items-center gap-2 text-sm">
-                              <Checkbox
-                                checked={false}
-                                disabled={togglingId === item._id}
-                                aria-label={`Mark ${item.title} complete`}
-                                onCheckedChange={(checked) => {
-                                  if (checked === true) {
-                                    void handleCompletionToggle(item._id, true)
+                            ) : undefined
+                          }
+                        />
+                        <p className="text-sm">{item.message}</p>
+                        <div className="flex flex-wrap items-center gap-3">
+                          {item.linkUrl ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              nativeButton={false}
+                              render={
+                                <Link
+                                  href={item.linkUrl}
+                                  target={
+                                    item.linkUrl.startsWith("http")
+                                      ? "_blank"
+                                      : undefined
                                   }
-                                }}
-                              />
-                              Mark complete
-                            </div>
+                                  rel={
+                                    item.linkUrl.startsWith("http")
+                                      ? "noopener noreferrer"
+                                      : undefined
+                                  }
+                                />
+                              }
+                            >
+                              Open link
+                              <ExternalLinkIcon className="size-3.5" />
+                            </Button>
+                          ) : null}
+                          <div className="flex cursor-pointer items-center gap-2 text-sm">
+                            <Checkbox
+                              checked={false}
+                              disabled={togglingId === item._id}
+                              aria-label={`Mark ${item.title} complete`}
+                              onCheckedChange={(checked) => {
+                                if (checked === true) {
+                                  void handleCompletionToggle(item._id, true)
+                                }
+                              }}
+                            />
+                            Mark complete
                           </div>
-                        </CardContent>
+                        </div>
                       </Card>
                     </li>
                   ))}
@@ -543,53 +526,47 @@ export default function ActionItemsPage() {
               )}
             </section>
 
-            <section className="flex flex-col gap-3">
-              <div>
-                <h2 className="font-heading text-lg font-semibold">
-                  Completed
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {data.completedItems.length === 0
+            <section className="flex flex-col gap-4">
+              <SectionHeader
+                title="Completed"
+                description={
+                  data.completedItems.length === 0
                     ? "Completed items will appear here."
-                    : `${data.completedItems.length} completed item${data.completedItems.length === 1 ? "" : "s"}.`}
-                </p>
-              </div>
+                    : `${data.completedItems.length} completed item${data.completedItems.length === 1 ? "" : "s"}.`
+                }
+              />
 
               {data.completedItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nothing completed yet.
-                </p>
+                <EmptyState
+                  title="Nothing completed yet"
+                  description="Finished action items will show up here."
+                />
               ) : (
-                <ul className="grid gap-3 sm:grid-cols-2">
+                <ul className="grid gap-4 sm:grid-cols-2">
                   {data.completedItems.map(({ item, completedAt }) => (
                     <li key={item._id}>
-                      <Card className="opacity-80">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base text-muted-foreground">
-                            {item.title}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            Completed {formatDateTime(completedAt)}
-                          </p>
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-3">
-                          <p className="text-sm text-muted-foreground">
-                            {item.message}
-                          </p>
-                          <div className="flex cursor-pointer items-center gap-2 text-sm">
-                            <Checkbox
-                              checked
-                              disabled={togglingId === item._id}
-                              aria-label={`Mark ${item.title} incomplete`}
-                              onCheckedChange={(checked) => {
-                                if (checked === false) {
-                                  void handleCompletionToggle(item._id, false)
-                                }
-                              }}
-                            />
-                            Completed
-                          </div>
-                        </CardContent>
+                      <Card className="gap-4 p-5 opacity-80">
+                        <SectionHeader
+                          title={item.title}
+                          description={`Completed ${formatDateTime(completedAt)}`}
+                          className="[&_h2]:text-muted-foreground"
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          {item.message}
+                        </p>
+                        <div className="flex cursor-pointer items-center gap-2 text-sm">
+                          <Checkbox
+                            checked
+                            disabled={togglingId === item._id}
+                            aria-label={`Mark ${item.title} incomplete`}
+                            onCheckedChange={(checked) => {
+                              if (checked === false) {
+                                void handleCompletionToggle(item._id, false)
+                              }
+                            }}
+                          />
+                          Completed
+                        </div>
                       </Card>
                     </li>
                   ))}

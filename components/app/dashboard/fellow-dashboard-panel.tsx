@@ -9,7 +9,10 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
+import { EmptyState } from "@/components/app/empty-state"
+import { ProgressBar } from "@/components/app/progress-bar"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
+import { SectionHeader } from "@/components/app/section-header"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -82,7 +85,7 @@ export function FellowDashboardPanel({
   const openItems = actionItems.filter((item) => item.status !== "done")
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
           <CardTitle>Your program progress</CardTitle>
@@ -93,9 +96,9 @@ export function FellowDashboardPanel({
           </CardDescription>
         </CardHeader>
         {totalCount > 0 ? (
-          <CardContent className="flex flex-col gap-2">
+          <CardContent className="flex flex-col gap-3">
             <div className="flex items-end justify-between gap-3">
-              <p className="font-heading text-4xl font-semibold tabular-nums">
+              <p className="font-heading text-2xl font-semibold tabular-nums tracking-tight">
                 {progressPercent}%
               </p>
               <ButtonLink
@@ -103,12 +106,12 @@ export function FellowDashboardPanel({
                 label="Full checklist"
               />
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out motion-reduce:transition-none"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+            <ProgressBar
+              value={completedCount}
+              max={totalCount}
+              className="h-2"
+              aria-label="Program progress"
+            />
           </CardContent>
         ) : null}
       </Card>
@@ -133,30 +136,23 @@ export function FellowDashboardPanel({
         />
       ) : null}
 
-      <section className="flex flex-col gap-3">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="font-heading text-lg font-semibold">Next up</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {openItems.length === 0
-                ? "You're caught up — nice work."
-                : `${openItems.length} item${openItems.length === 1 ? "" : "s"} waiting on you.`}
-            </p>
-          </div>
-        </div>
+      <section className="flex flex-col gap-4">
+        <SectionHeader
+          title="Next up"
+          description={
+            openItems.length === 0
+              ? "You're caught up — nice work."
+              : `${openItems.length} item${openItems.length === 1 ? "" : "s"} waiting on you.`
+          }
+        />
 
         {openItems.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center gap-3 py-6">
-              <CheckCircle2Icon className="size-5 text-primary" />
-              <p className="text-sm text-muted-foreground">
-                No open tasks right now. Check back after your pod leader adds
-                more activities.
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="All caught up"
+            description="No open tasks right now. Check back after your pod leader adds more activities."
+          />
         ) : (
-          <ul className="divide-y divide-border/70 rounded-lg ring-1 ring-foreground/10">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
             {openItems.map((item) => {
               const Icon = statusIcon(item.status)
               return (

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react"
 import { UserRoundSearchIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { shellSwitcherTriggerClass } from "@/components/app/cohort-switcher"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -16,6 +17,7 @@ import {
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { cohortPath } from "@/lib/cohort-routes"
+import { cn } from "@/lib/utils"
 
 export function ImpersonateFellowControl({
   cohortId,
@@ -62,15 +64,15 @@ export function ImpersonateFellowControl({
           <Button
             variant="outline"
             size="sm"
-            className="h-auto min-h-6 w-full justify-start gap-2 py-1.5"
+            className={cn(shellSwitcherTriggerClass, "justify-start gap-2")}
             aria-label="View as fellow"
             disabled={!targets?.length}
           />
         }
       >
-        <UserRoundSearchIcon className="size-3.5 shrink-0" />
+        <UserRoundSearchIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate text-left">
-          <span className="block truncate font-medium leading-tight">
+          <span className="block truncate text-sm font-medium leading-tight">
             View as fellow
           </span>
           <span className="block truncate text-xs leading-tight text-muted-foreground">

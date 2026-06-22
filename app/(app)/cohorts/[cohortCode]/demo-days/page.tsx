@@ -1,13 +1,16 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import { Info, PencilIcon, Trash2Icon } from "lucide-react"
+import { PencilIcon, Trash2Icon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
+import { InfoCallout } from "@/components/app/info-callout"
 import { runGenerateAllWeeks } from "@/components/app/manageable-week-slot-list"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
+import { PageSkeleton, SkeletonTable } from "@/components/app/page-skeleton"
+import { SectionHeader } from "@/components/app/section-header"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import {
   AlertDialog,
@@ -21,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -102,18 +106,13 @@ export default function DemoDaysPage() {
 
   if (isLoading || data === undefined) {
     return (
-      <>
-        <PageHeader
-          title="Demo Days"
-          description="Assign presentation dates and track demo completion."
-        />
-        <PageBody>
-          <EmptyState
-            title="Loading…"
-            description="Fetching demo day assignments for this pod."
-          />
-        </PageBody>
-      </>
+      <PageSkeleton
+        title="Demo Days"
+        description="Assign presentation dates and track demo completion."
+        width={isLeader ? "wide" : "default"}
+      >
+        <SkeletonTable rows={5} columns={isLeader ? 4 : 3} />
+      </PageSkeleton>
     )
   }
 
@@ -150,23 +149,31 @@ export default function DemoDaysPage() {
     )
   }
 
+  if (!isLeader) {
+    return (
+      <FellowDemoDayView
+        cohortId={cohortId}
+        myFellowId={myFellowId}
+        fellows={data?.fellows ?? []}
+        demoMap={demoMap}
+        updateDemoCompletion={updateDemoCompletion}
+      />
+    )
+  }
+
   return (
     <>
       <PageHeader
         title="Demo Days"
         description="Assign presentation dates and track demo completion."
       />
-      <PageBody>
-        <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span>
-            {isLeader
-              ? "Assign demo dates for fellows. Fellows can mark their own completed status."
-              : "For your demo day, share what you achieved in your portfolio and the learnings from the current week."}
-          </span>
-        </p>
+      <PageBody width="wide">
+        <InfoCallout variant="info">
+          Assign demo dates for fellows. Fellows can mark their own completed
+          status.
+        </InfoCallout>
 
-        {isLeader && (data?.fellows ?? []).length > 0 ? (
+        {(data?.fellows ?? []).length > 0 ? (
           <PageToolbar title="Assign a demo date">
             <form
               className="flex flex-wrap items-end gap-3"
@@ -339,156 +346,158 @@ export default function DemoDaysPage() {
         {(data?.fellows ?? []).length === 0 ? (
           <EmptyState
             title="No fellows yet"
-            description={
-              isLeader
-                ? "Add fellows in Cohort Settings before assigning demo days."
-                : "Your pod leader hasn't added fellows to this cohort yet."
-            }
+            description="Add fellows in Cohort Settings before assigning demo days."
             action={
-              isLeader ? (
-                <Button
-                  variant="outline"
-                  nativeButton={false}
-                  render={
-                    <Link
-                      href={cohortPath(
-                        settingsProgramCode ?? cohort?.cohort.programCode ?? "",
-                        "settings",
-                      )}
-                    />
-                  }
-                >
-                  Go to Cohort Settings
-                </Button>
-              ) : null
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={
+                  <Link
+                    href={cohortPath(
+                      settingsProgramCode ?? cohort.cohort.programCode ?? "",
+                      "settings",
+                    )}
+                  />
+                }
+              >
+                Go to Cohort Settings
+              </Button>
             }
           />
         ) : (
-          <div className="overflow-auto rounded-lg border border-border/70">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fellow</TableHead>
-                  <TableHead>Date for Demo</TableHead>
-                  <TableHead>Completed Demo</TableHead>
-                  {isLeader ? (
-                    <TableHead className="w-24 text-right">Actions</TableHead>
-                  ) : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(data?.fellows ?? []).map((fellow) => {
-                  const demo = demoMap.get(fellow._id)
-                  const editable = isLeader || myFellowId === fellow._id
-
-                  return (
-                    <TableRow key={fellow._id}>
-                      <TableCell className="font-medium">
-                        {fellow.name}
-                      </TableCell>
-                      <TableCell>
-                        {demo ? formatDate(demo.demoDate) : "Not assigned"}
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          checked={demo?.completed ?? false}
-                          disabled={!editable || !demo}
-                          aria-label={`Completed demo for ${fellow.name}`}
-                          onCheckedChange={(checked) => {
-                            if (!demo) return
-                            void updateDemoCompletion({
-                              cohortId,
-                              demoDayId: demo._id,
-                              completed: checked === true,
-                            }).then(
-                              () => toast.success("Demo status updated."),
-                              (error: unknown) =>
-                                toast.error(
-                                  error instanceof Error
-                                    ? error.message
-                                    : "Update failed.",
-                                ),
-                            )
-                          }}
-                        />
-                      </TableCell>
-                      {isLeader ? (
-                        <TableCell className="text-right">
-                          {demo ? (
-                            <div className="flex justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={`Edit demo date for ${fellow.name}`}
-                                onClick={() => {
-                                  setEditingDemoDayId(demo._id)
-                                  setEditDemoDate(
-                                    toDateInputValue(demo.demoDate),
-                                  )
-                                }}
-                              >
-                                <PencilIcon className="size-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger
-                                  render={
-                                    <Button
-                                      variant="ghost"
-                                      size="icon-sm"
-                                      aria-label={`Remove demo date for ${fellow.name}`}
-                                    />
-                                  }
-                                >
-                                  <Trash2Icon className="size-4 text-destructive" />
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Remove demo day?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This clears the assigned date for{" "}
-                                      {fellow.name}. You can assign a new date
-                                      later.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() =>
-                                        void removeDemoDay({
-                                          cohortId,
-                                          demoDayId: demo._id,
-                                        }).then(
-                                          () =>
-                                            toast.success("Demo day removed."),
-                                          (error: unknown) =>
-                                            toast.error(
-                                              error instanceof Error
-                                                ? error.message
-                                                : "Remove failed.",
-                                            ),
-                                        )
-                                      }
-                                    >
-                                      Remove
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          ) : null}
-                        </TableCell>
-                      ) : null}
+          <Card>
+            <CardContent className="flex flex-col gap-4 px-0 pt-6">
+              <div className="px-6">
+                <SectionHeader
+                  title="Demo day schedule"
+                  description="One presentation date per fellow. Edit or remove assignments as needed."
+                />
+              </div>
+              <div className="overflow-auto border-t border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fellow</TableHead>
+                      <TableHead>Date for Demo</TableHead>
+                      <TableHead>Completed Demo</TableHead>
+                      <TableHead className="w-24 text-right">Actions</TableHead>
                     </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {(data?.fellows ?? []).map((fellow) => {
+                      const demo = demoMap.get(fellow._id)
+
+                      return (
+                        <TableRow key={fellow._id}>
+                          <TableCell className="font-medium">
+                            {fellow.name}
+                          </TableCell>
+                          <TableCell>
+                            {demo ? formatDate(demo.demoDate) : "Not assigned"}
+                          </TableCell>
+                          <TableCell>
+                            <Checkbox
+                              checked={demo?.completed ?? false}
+                              disabled={!demo}
+                              aria-label={`Completed demo for ${fellow.name}`}
+                              onCheckedChange={(checked) => {
+                                if (!demo) return
+                                void updateDemoCompletion({
+                                  cohortId,
+                                  demoDayId: demo._id,
+                                  completed: checked === true,
+                                }).then(
+                                  () => toast.success("Demo status updated."),
+                                  (error: unknown) =>
+                                    toast.error(
+                                      error instanceof Error
+                                        ? error.message
+                                        : "Update failed.",
+                                    ),
+                                )
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {demo ? (
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={`Edit demo date for ${fellow.name}`}
+                                  onClick={() => {
+                                    setEditingDemoDayId(demo._id)
+                                    setEditDemoDate(
+                                      toDateInputValue(demo.demoDate),
+                                    )
+                                  }}
+                                >
+                                  <PencilIcon className="size-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger
+                                    render={
+                                      <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        aria-label={`Remove demo date for ${fellow.name}`}
+                                      />
+                                    }
+                                  >
+                                    <Trash2Icon className="size-4 text-destructive" />
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Remove demo day?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This clears the assigned date for{" "}
+                                        {fellow.name}. You can assign a new date
+                                        later.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() =>
+                                          void removeDemoDay({
+                                            cohortId,
+                                            demoDayId: demo._id,
+                                          }).then(
+                                            () =>
+                                              toast.success(
+                                                "Demo day removed.",
+                                              ),
+                                            (error: unknown) =>
+                                              toast.error(
+                                                error instanceof Error
+                                                  ? error.message
+                                                  : "Remove failed.",
+                                              ),
+                                          )
+                                        }
+                                      >
+                                        Remove
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         )}
+
         <Dialog
           open={editingDemoDayId !== null}
           onOpenChange={(open) => {
@@ -554,6 +563,168 @@ export default function DemoDaysPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </PageBody>
+    </>
+  )
+}
+
+type DemoDayRecord = {
+  _id: Id<"demoDays">
+  fellowId: Id<"fellows">
+  demoDate: number
+  completed: boolean
+}
+
+function FellowDemoDayView({
+  cohortId,
+  myFellowId,
+  fellows,
+  demoMap,
+  updateDemoCompletion,
+}: {
+  cohortId: Id<"cohorts">
+  myFellowId: Id<"fellows"> | undefined
+  fellows: Array<{ _id: Id<"fellows">; name: string }>
+  demoMap: Map<Id<"fellows">, DemoDayRecord>
+  updateDemoCompletion: (args: {
+    cohortId: Id<"cohorts">
+    demoDayId: Id<"demoDays">
+    completed: boolean
+  }) => Promise<unknown>
+}) {
+  const myFellow = fellows.find((fellow) => fellow._id === myFellowId)
+  const myDemo = myFellowId ? demoMap.get(myFellowId) : undefined
+
+  return (
+    <>
+      <PageHeader
+        title="Demo Days"
+        description="Your presentation date and demo completion status."
+      />
+      <PageBody>
+        <InfoCallout variant="info">
+          For your demo day, share what you achieved in your portfolio and the
+          learnings from the current week.
+        </InfoCallout>
+
+        {fellows.length === 0 ? (
+          <EmptyState
+            title="No fellows yet"
+            description="Your pod leader hasn't added fellows to this cohort yet."
+          />
+        ) : (
+          <>
+            {myFellow && !myDemo ? (
+              <EmptyState
+                title="No demo day scheduled"
+                description="Your pod leader hasn't assigned a demo date for you yet."
+              />
+            ) : null}
+            {myFellow && myDemo ? (
+              <Card>
+                <CardContent className="flex flex-col gap-4 pt-6">
+                  <SectionHeader
+                    title="Your demo day"
+                    description="Mark completed after you present."
+                  />
+                  <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium">{myFellow.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(myDemo.demoDate)} ({PROGRAM_TIMEZONE_LABEL})
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={myDemo.completed}
+                        aria-label="Completed demo"
+                        onCheckedChange={(checked) => {
+                          void updateDemoCompletion({
+                            cohortId,
+                            demoDayId: myDemo._id,
+                            completed: checked === true,
+                          }).then(
+                            () => toast.success("Demo status updated."),
+                            (error: unknown) =>
+                              toast.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Update failed.",
+                              ),
+                          )
+                        }}
+                      />
+                      Completed demo
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+            <Card>
+              <CardContent className="flex flex-col gap-4 px-0 pt-6">
+                <div className="px-6">
+                  <SectionHeader
+                    title="Demo day schedule"
+                    description="Presentation dates and completion status for your pod."
+                  />
+                </div>
+                <div className="overflow-auto border-t border-border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fellow</TableHead>
+                        <TableHead>Date for Demo</TableHead>
+                        <TableHead>Completed Demo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {fellows.map((fellow) => {
+                        const demo = demoMap.get(fellow._id)
+                        const editable = myFellowId === fellow._id
+
+                        return (
+                          <TableRow key={fellow._id}>
+                            <TableCell className="font-medium">
+                              {fellow.name}
+                            </TableCell>
+                            <TableCell>
+                              {demo
+                                ? formatDate(demo.demoDate)
+                                : "Not assigned"}
+                            </TableCell>
+                            <TableCell>
+                              <Checkbox
+                                checked={demo?.completed ?? false}
+                                disabled={!editable || !demo}
+                                aria-label={`Completed demo for ${fellow.name}`}
+                                onCheckedChange={(checked) => {
+                                  if (!demo) return
+                                  void updateDemoCompletion({
+                                    cohortId,
+                                    demoDayId: demo._id,
+                                    completed: checked === true,
+                                  }).then(
+                                    () => toast.success("Demo status updated."),
+                                    (error: unknown) =>
+                                      toast.error(
+                                        error instanceof Error
+                                          ? error.message
+                                          : "Update failed.",
+                                      ),
+                                  )
+                                }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </PageBody>
     </>
   )

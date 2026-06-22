@@ -1,4 +1,14 @@
 import type { ReactNode } from "react"
+import { cn } from "@/lib/utils"
+
+const pageWidthClasses = {
+  narrow: "mx-auto w-full max-w-2xl",
+  default: "mx-auto w-full max-w-4xl",
+  wide: "mx-auto w-full max-w-6xl",
+  full: "w-full",
+} as const
+
+export type PageWidth = keyof typeof pageWidthClasses
 
 export function PageHeader({
   title,
@@ -10,7 +20,7 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-4 border-b border-border/70 bg-background/80 px-6 py-5 backdrop-blur-sm lg:flex-row lg:items-end lg:justify-between">
+    <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-border bg-background px-6 py-5 lg:flex-row lg:items-end lg:justify-between">
       <div className="flex max-w-2xl flex-col gap-1">
         <h1 className="font-heading text-2xl font-semibold tracking-tight text-balance">
           {title}
@@ -26,9 +36,23 @@ export function PageHeader({
   )
 }
 
-export function PageBody({ children }: { children: ReactNode }) {
+export function PageBody({
+  children,
+  width = "default",
+  className,
+}: {
+  children: ReactNode
+  width?: PageWidth
+  className?: string
+}) {
   return (
-    <div className="flex flex-1 flex-col gap-6 overflow-auto px-6 py-6">
+    <div
+      className={cn(
+        "flex flex-1 flex-col gap-6 overflow-auto px-6 py-6",
+        pageWidthClasses[width],
+        className,
+      )}
+    >
       {children}
     </div>
   )
@@ -42,7 +66,7 @@ export function PageToolbar({
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-card/40 p-4">
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
       {title ? (
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
       ) : null}

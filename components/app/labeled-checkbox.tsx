@@ -23,7 +23,10 @@ export function LabeledCheckbox({
   return (
     <label
       htmlFor={id}
-      className={cn("flex items-center gap-2 text-sm", className)}
+      className={cn(
+        "flex cursor-pointer items-center gap-2.5 text-sm leading-none",
+        className,
+      )}
     >
       <Checkbox
         id={id}

@@ -133,7 +133,7 @@ export function PushNotificationToggle({
       return null
     }
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground" aria-live="polite">
         Checking browser notification support…
       </p>
     )
@@ -162,12 +162,15 @@ export function PushNotificationToggle({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-2 text-sm">
         {isSubscribed ? (
-          <BellIcon className="size-4 text-primary" />
+          <BellIcon className="size-4 text-primary" aria-hidden="true" />
         ) : (
-          <BellOffIcon className="size-4 text-muted-foreground" />
+          <BellOffIcon
+            className="size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
         )}
         <span>
           {isSubscribed

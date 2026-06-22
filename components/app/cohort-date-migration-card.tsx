@@ -3,14 +3,10 @@
 import { useMutation } from "convex/react"
 import { useState } from "react"
 import { toast } from "sonner"
+import { InfoCallout } from "@/components/app/info-callout"
+import { SectionHeader } from "@/components/app/section-header"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { PROGRAM_TIMEZONE_LABEL } from "@/lib/dates"
@@ -90,19 +86,20 @@ export function CohortDateMigrationCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Program dates</CardTitle>
-        <CardDescription>
+        <SectionHeader title="Program dates" />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <InfoCallout variant="info">
           {scope === "umbrella"
             ? `Normalize stored dates for this cohort and every pod to midnight ${PROGRAM_TIMEZONE_LABEL}. Use this once if older data shows the wrong calendar day.`
             : `Normalize stored dates for this pod to midnight ${PROGRAM_TIMEZONE_LABEL}. Use this once if older data shows the wrong calendar day.`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </InfoCallout>
         <Button
           type="button"
           variant="outline"
           disabled={isMigrating}
           onClick={() => void handleMigrate()}
+          className="self-start"
         >
           {isMigrating
             ? "Normalizing…"

@@ -12,51 +12,20 @@ export default function Icon() {
     <div
       style={{
         alignItems: "center",
-        background: "linear-gradient(135deg, #0f4fbd 0%, #35a9f4 100%)",
-        color: "#f7fcff",
+        background: "#0069a8",
+        borderRadius: "6px",
+        color: "#f0f9ff",
         display: "flex",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        fontSize: 14,
+        fontWeight: 700,
         height: "100%",
         justifyContent: "center",
-        letterSpacing: "-0.12em",
-        overflow: "hidden",
-        position: "relative",
+        letterSpacing: "-0.08em",
         width: "100%",
       }}
     >
-      <div
-        style={{
-          background: "rgba(255, 255, 255, 0.18)",
-          borderRadius: "999px",
-          height: 28,
-          left: -8,
-          position: "absolute",
-          top: -10,
-          width: 28,
-        }}
-      />
-      <div
-        style={{
-          background: "rgba(1, 21, 55, 0.18)",
-          borderRadius: "999px",
-          bottom: -9,
-          height: 24,
-          position: "absolute",
-          right: -6,
-          width: 24,
-        }}
-      />
-      <div
-        style={{
-          fontFamily: "Arial, Helvetica, sans-serif",
-          fontSize: 16,
-          fontWeight: 800,
-          lineHeight: 1,
-          marginLeft: -1,
-          marginTop: 1,
-        }}
-      >
-        FT
-      </div>
+      FT
     </div>,
     size,
   )
