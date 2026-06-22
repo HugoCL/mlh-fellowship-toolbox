@@ -9,20 +9,22 @@ import {
   MailIcon,
   Maximize2Icon,
   Minimize2Icon,
-  NotebookPenIcon,
   PlayIcon,
   RotateCcwIcon,
   ShuffleIcon,
-  SparklesIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
+import { InfoCallout } from "@/components/app/info-callout"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
+import { PageSkeleton } from "@/components/app/page-skeleton"
+import { SectionHeader } from "@/components/app/section-header"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import {
   type FellowNote,
@@ -220,12 +222,13 @@ export default function NotesViewerPage() {
 
   if (isLoading || cohort === undefined) {
     return (
-      <>
-        <PageHeader title="Notes Viewer" description="Loading…" />
-        <PageBody>
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        </PageBody>
-      </>
+      <PageSkeleton
+        title="Notes Viewer"
+        description="Present retro and standup notes during meetings."
+        width="narrow"
+      >
+        <Skeleton className="h-64 rounded-lg" />
+      </PageSkeleton>
     )
   }
 
@@ -236,7 +239,7 @@ export default function NotesViewerPage() {
           title="Notes Viewer"
           description="Present retro and standup notes during meetings."
         />
-        <PageBody>
+        <PageBody width="narrow">
           <UmbrellaAdminActivityNotice
             settingsProgramCode={settingsProgramCode ?? ""}
           />
@@ -252,7 +255,7 @@ export default function NotesViewerPage() {
           title="Notes Viewer"
           description="Pod leader access required."
         />
-        <PageBody>
+        <PageBody width="narrow">
           <EmptyState
             title="Pod leaders only"
             description="Notes Viewer is for pod leaders to present retro and standup submissions during meetings."
@@ -269,13 +272,13 @@ export default function NotesViewerPage() {
           title="Notes Viewer"
           description="Paste a retro or standup export and present it during the meeting."
         />
-        <PageBody>
-          <Card className="mx-auto w-full max-w-3xl">
+        <PageBody width="narrow">
+          <Card>
             <CardContent className="flex flex-col gap-4 py-6">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <NotebookPenIcon className="size-4" />
-                Paste the JSON export from the LMS report below.
-              </div>
+              <InfoCallout variant="neutral">
+                Paste the JSON export from the LMS report below. Nothing is
+                saved to the server.
+              </InfoCallout>
               <Textarea
                 value={rawInput}
                 onChange={(event) => setRawInput(event.target.value)}
@@ -284,18 +287,17 @@ export default function NotesViewerPage() {
                 spellCheck={false}
               />
               {error ? (
-                <p className="text-sm text-destructive">{error}</p>
+                <InfoCallout variant="warning">{error}</InfoCallout>
               ) : null}
               <div className="flex items-center justify-end gap-2">
                 <Button
                   variant="ghost"
-                  size="lg"
                   onClick={() => setRawInput("")}
                   disabled={rawInput.length === 0}
                 >
                   Clear
                 </Button>
-                <Button size="lg" onClick={handleLoad}>
+                <Button onClick={handleLoad}>
                   <PlayIcon data-icon="inline-start" />
                   Load notes
                 </Button>
@@ -318,10 +320,7 @@ export default function NotesViewerPage() {
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="gap-1">
-            <SparklesIcon />
-            {NOTE_KIND_LABEL[parsed.kind]}
-          </Badge>
+          <Badge variant="secondary">{NOTE_KIND_LABEL[parsed.kind]}</Badge>
           <span className="text-sm font-medium text-muted-foreground tabular-nums">
             {position + 1} / {total}
           </span>
@@ -400,10 +399,11 @@ export default function NotesViewerPage() {
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside className="hidden min-h-0 flex-col overflow-auto rounded-xl border border-border/70 bg-card/40 p-2 lg:flex">
-          <p className="px-2 py-1.5 text-[0.7rem] font-medium tracking-wide text-muted-foreground uppercase">
-            Running order
-          </p>
+        <aside className="hidden min-h-0 flex-col overflow-auto rounded-lg border border-border bg-card p-2 lg:flex">
+          <SectionHeader
+            title="Running order"
+            className="px-2 py-1.5 [&_h2]:text-xs [&_h2]:font-medium [&_h2]:tracking-wide [&_h2]:uppercase [&_h2]:text-muted-foreground"
+          />
           <ul className="flex flex-col gap-0.5">
             {order.map((noteIndex, queueIndex) => {
               const note = notes[noteIndex]
@@ -434,12 +434,12 @@ export default function NotesViewerPage() {
         </aside>
 
         {currentNote ? (
-          <div className="flex min-h-0 flex-col overflow-auto rounded-xl border border-border/70 bg-card/30 p-6">
-            <div className="flex flex-col gap-1 border-b border-border/60 pb-4">
+          <div className="flex min-h-0 flex-col overflow-auto rounded-lg border border-border bg-card p-6">
+            <div className="flex flex-col gap-1 border-b border-border pb-4">
               <h2
                 className={cn(
                   "font-heading font-semibold tracking-tight text-balance",
-                  presenting ? "text-4xl" : "text-3xl",
+                  presenting ? "text-3xl" : "text-2xl",
                 )}
               >
                 {currentNote.name}
@@ -476,15 +476,16 @@ export default function NotesViewerPage() {
                       {section.label}
                     </h3>
                     {section.isEmpty ? (
-                      <p className="text-sm text-muted-foreground/60 italic">
+                      <p className="text-sm text-muted-foreground italic">
                         No response
                       </p>
                     ) : (
                       <p
                         className={cn(
                           "whitespace-pre-line leading-relaxed text-foreground",
-                          presenting ? "text-lg" : "text-base",
-                          section.isHighlight && "rounded-lg border border-primary/20 bg-primary/5 px-4 py-3",
+                          presenting ? "text-lg" : "text-sm",
+                          section.isHighlight &&
+                            "rounded-lg border border-primary/20 bg-primary/5 px-4 py-3",
                         )}
                       >
                         {section.content}
@@ -514,7 +515,7 @@ export default function NotesViewerPage() {
               total === 1 ? "submission" : "submissions"
             }`}
           />
-          <PageBody>{board}</PageBody>
+          <PageBody width="wide">{board}</PageBody>
         </>
       )}
     </div>
