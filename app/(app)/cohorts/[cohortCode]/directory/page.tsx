@@ -1,26 +1,23 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import {
-  CalendarIcon,
-  CopyIcon,
-  HashIcon,
-  MailIcon,
-  PencilIcon,
-  UserPlusIcon,
-} from "lucide-react"
+import { CopyIcon, Share2Icon, UserPlusIcon } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
+import {
+  DirectoryGrid,
+  type DirectoryPerson,
+  roleBadgeLabel,
+} from "@/components/app/directory-grid"
 import { DiscordUsernameSetup } from "@/components/app/discord-username-setup"
 import { MentorProfileEditDialog } from "@/components/app/mentor-profile-edit-dialog"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
+import { PublicShareDialog } from "@/components/app/public-share-dialog"
 import { SchedulingLinkSetup } from "@/components/app/scheduling-link-setup"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -42,39 +39,11 @@ import {
 } from "@/components/ui/select"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
-import {
-  formatDiscordUsername,
-  hasDiscordUsername,
-} from "@/lib/discord-username"
+import { hasDiscordUsername } from "@/lib/discord-username"
 import { inviteUrl } from "@/lib/invite-url"
 import { hasSchedulingLink } from "@/lib/scheduling-link"
 import { useActiveCohortContext } from "@/lib/use-active-cohort"
 import { useCohortRoute } from "@/lib/use-cohort-route"
-
-function roleBadgeLabel(role: "podLeader" | "fellow" | "mentor"): string {
-  switch (role) {
-    case "podLeader":
-      return "Pod Leader"
-    case "fellow":
-      return "Fellow"
-    case "mentor":
-      return "Mentor"
-  }
-}
-
-function getInitials(name: string): string {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter((part) => part.length > 0)
-  if (parts.length === 0) {
-    return "?"
-  }
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase()
-  }
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-}
 
 export default function DirectoryPage() {
   const { programCode, cohortId } = useCohortRoute()
@@ -168,10 +137,20 @@ export default function DirectoryPage() {
         description={`Members of pod ${directory.cohortProgramCode}.`}
         actions={
           canInvite ? (
-            <DialogTrigger render={<Button />}>
-              <UserPlusIcon data-icon="inline-start" />
-              Invite to pod
-            </DialogTrigger>
+            <>
+              <PublicShareDialog
+                cohortId={cohortId}
+                feature="directory"
+                title="Share public directory"
+                description="Anyone with this link can view the pod contact directory."
+                triggerLabel="Share public directory"
+                triggerIcon={<Share2Icon data-icon="inline-start" />}
+              />
+              <DialogTrigger render={<Button />}>
+                <UserPlusIcon data-icon="inline-start" />
+                Invite to pod
+              </DialogTrigger>
+            </>
           ) : undefined
         }
       />
@@ -237,6 +216,7 @@ export default function DirectoryPage() {
           <DirectoryGrid
             people={directory.people}
             canManageMentors={canInvite}
+            showMemberStatus
             onEditMentor={setEditingMentor}
           />
 
@@ -450,155 +430,5 @@ function PendingInvitesList({
         </ul>
       </div>
     </section>
-  )
-}
-
-type DirectoryPerson = {
-  _id: string
-  name: string
-  email: string | null
-  role: "podLeader" | "fellow" | "mentor"
-  calendlyUrl: string | null
-  discordUsername: string | null
-  imageUrl: string | null
-  joined: boolean
-  pendingInvite: boolean
-}
-
-function DirectoryGrid({
-  people,
-  canManageMentors,
-  onEditMentor,
-}: {
-  people: Array<DirectoryPerson>
-  canManageMentors: boolean
-  onEditMentor: (person: DirectoryPerson) => void
-}) {
-  return (
-    <section className="flex w-full flex-col gap-4">
-      <div>
-        <h2 className="font-heading text-lg font-semibold">People</h2>
-      </div>
-      {people.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
-          No people in this pod yet.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {people.map((person) => (
-            <DirectoryCard
-              key={person._id}
-              person={person}
-              canManageMentors={canManageMentors}
-              onEditMentor={onEditMentor}
-            />
-          ))}
-        </div>
-      )}
-    </section>
-  )
-}
-
-function DirectoryCard({
-  person,
-  canManageMentors,
-  onEditMentor,
-}: {
-  person: DirectoryPerson
-  canManageMentors: boolean
-  onEditMentor: (person: DirectoryPerson) => void
-}) {
-  const showEditMentor = canManageMentors && person.role === "mentor"
-
-  return (
-    <Card className="gap-0 p-5 transition-shadow hover:ring-foreground/20 hover:shadow-sm">
-      <div className="flex items-start gap-4">
-        <Avatar size="lg" className="size-12">
-          {person.imageUrl ? (
-            <AvatarImage src={person.imageUrl} alt={person.name} />
-          ) : null}
-          <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
-            {getInitials(person.name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <p className="truncate font-heading text-sm font-semibold leading-tight">
-              {person.name}
-            </p>
-            {showEditMentor ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Edit ${person.name}'s profile`}
-                onClick={() => onEditMentor(person)}
-              >
-                <PencilIcon className="size-3.5" />
-              </Button>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary">{roleBadgeLabel(person.role)}</Badge>
-            {person.pendingInvite ? (
-              <Badge
-                variant="outline"
-                className="text-amber-600 dark:text-amber-400"
-              >
-                Invite pending
-              </Badge>
-            ) : person.joined ? (
-              <Badge
-                variant="outline"
-                className="text-emerald-600 dark:text-emerald-400"
-              >
-                Active
-              </Badge>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-2 text-xs/relaxed text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <MailIcon className="size-3.5 shrink-0" />
-          {person.email ? (
-            <a
-              href={`mailto:${person.email}`}
-              className="truncate text-foreground underline-offset-4 hover:underline"
-            >
-              {person.email}
-            </a>
-          ) : (
-            <span>No email</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <HashIcon className="size-3.5 shrink-0" />
-          {person.discordUsername ? (
-            <span className="truncate text-foreground">
-              {formatDiscordUsername(person.discordUsername)}
-            </span>
-          ) : (
-            <span>Discord not set</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="size-3.5 shrink-0" />
-          {person.calendlyUrl ? (
-            <a
-              href={person.calendlyUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-foreground underline-offset-4 hover:underline"
-            >
-              Open scheduling link
-            </a>
-          ) : (
-            <span>Scheduling link not set</span>
-          )}
-        </div>
-      </div>
-    </Card>
   )
 }

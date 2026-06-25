@@ -39,6 +39,7 @@ import type * as mentors from "../mentors.js";
 import type * as notificationDelivery from "../notificationDelivery.js";
 import type * as notifications from "../notifications.js";
 import type * as oneOnOnes from "../oneOnOnes.js";
+import type * as publicShares from "../publicShares.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
@@ -80,6 +81,7 @@ declare const fullApi: ApiFromModules<{
   notificationDelivery: typeof notificationDelivery;
   notifications: typeof notifications;
   oneOnOnes: typeof oneOnOnes;
+  publicShares: typeof publicShares;
   seed: typeof seed;
   users: typeof users;
 }>;

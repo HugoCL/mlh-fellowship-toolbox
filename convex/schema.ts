@@ -5,6 +5,7 @@ import {
   inviteStatusValidator,
   notificationStatusValidator,
   oneOnOneStatusValidator,
+  publicShareFeatureValidator,
   pushDeliveryStatusValidator,
   recurrenceCadenceValidator,
   roleValidator,
@@ -282,4 +283,17 @@ export default defineSchema({
   })
     .index("by_cohort", ["cohortId"])
     .index("by_enabled_and_next_run", ["enabled", "nextRunAt"]),
+
+  publicShareLinks: defineTable({
+    cohortId: v.id("cohorts"),
+    feature: publicShareFeatureValidator,
+    token: v.string(),
+    enabled: v.boolean(),
+    createdByUserId: v.id("users"),
+    createdAt: v.number(),
+    updatedByUserId: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_cohort_and_feature", ["cohortId", "feature"]),
 })

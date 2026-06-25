@@ -6,6 +6,11 @@ export const roleValidator = v.union(
   v.literal("mentor"),
 )
 
+export const publicShareFeatureValidator = v.union(
+  v.literal("directory"),
+  v.literal("mentorMeetings"),
+)
+
 export const directoryInviteRoleValidator = v.union(
   v.literal("fellow"),
   v.literal("mentor"),
@@ -169,4 +174,17 @@ export const recurringNotificationValidator = v.object({
   createdByUserId: v.id("users"),
   createdAt: v.number(),
   lastRunAt: v.optional(v.number()),
+})
+
+export const publicShareLinkValidator = v.object({
+  _id: v.id("publicShareLinks"),
+  _creationTime: v.number(),
+  cohortId: v.id("cohorts"),
+  feature: publicShareFeatureValidator,
+  token: v.string(),
+  enabled: v.boolean(),
+  createdByUserId: v.id("users"),
+  createdAt: v.number(),
+  updatedByUserId: v.id("users"),
+  updatedAt: v.number(),
 })

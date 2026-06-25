@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQuery } from "convex/react"
-import { ExternalLink, Info, PencilIcon } from "lucide-react"
+import { ExternalLink, Info, PencilIcon, Share2Icon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -12,6 +12,7 @@ import {
 } from "@/components/app/manageable-week-slot-list"
 import { MentorProfileEditDialog } from "@/components/app/mentor-profile-edit-dialog"
 import { PageBody, PageHeader, PageToolbar } from "@/components/app/page-frame"
+import { PublicShareDialog } from "@/components/app/public-share-dialog"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Button } from "@/components/ui/button"
 import {
@@ -172,6 +173,16 @@ export default function MentorsPage() {
       <PageHeader
         title="Mentor Meetings"
         description="Assign and track external mentor 1:1s across the program."
+        actions={
+          <PublicShareDialog
+            cohortId={cohortId}
+            feature="mentorMeetings"
+            title="Share public schedule"
+            description="Anyone with this link can view the readonly mentor meeting schedule."
+            triggerLabel="Share public schedule"
+            triggerIcon={<Share2Icon data-icon="inline-start" />}
+          />
+        }
       />
       <PageBody>
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
