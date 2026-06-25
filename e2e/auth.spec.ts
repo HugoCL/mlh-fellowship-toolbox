@@ -18,6 +18,12 @@ for (const route of protectedRoutes) {
   })
 }
 
+test("does not require sign-in for public share links", async ({ page }) => {
+  await page.goto("/share/directory/not-real")
+  await expect(page).toHaveURL(/\/share\/directory\/not-real/)
+  await expect(page.getByText("Shared view unavailable")).toBeVisible()
+})
+
 test("sign-in page renders without Clerk configuration errors", async ({
   page,
 }) => {

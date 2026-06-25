@@ -2,7 +2,11 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import { legacyCohortPathRedirect } from "@/lib/cohort-routes"
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"])
+const isPublicRoute = createRouteMatcher([
+  "/share(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+])
 
 export default clerkMiddleware(
   async (auth, request) => {
