@@ -27,6 +27,11 @@ export type ParseResult =
   | { ok: true; data: ParsedNotes }
   | { ok: false; error: string }
 
+export type NotesUpload = {
+  fileName?: string
+  content: string
+}
+
 type SectionDef = { key: string; label: string; isHighlight: boolean }
 
 const RETRO_SECTIONS: SectionDef[] = [
@@ -295,6 +300,17 @@ export function parseLmsNotesJson(raw: string): ParseResult {
   const notes = records.map((record) => toFellowNote(record, sectionDefs))
 
   return { ok: true, data: { kind, notes } }
+}
+
+export function parseLmsNotesUpload(upload: NotesUpload): ParseResult {
+  const fileName = upload.fileName?.trim()
+  if (fileName && !/\.(json|txt)$/i.test(fileName)) {
+    return {
+      ok: false,
+      error: "Drop a JSON file or paste the export content instead.",
+    }
+  }
+  return parseLmsNotesJson(upload.content)
 }
 
 /** Deterministic PRNG so a given seed always yields the same order. */

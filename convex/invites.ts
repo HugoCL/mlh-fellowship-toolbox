@@ -1,7 +1,7 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 import { normalizeEmail } from "./lib/appAccess"
-import { getCurrentUser, getOrCreateCurrentUser } from "./lib/auth"
+import { getOrCreateCurrentUser } from "./lib/auth"
 import { umbrellaLeaderQuery } from "./lib/customFunctions"
 import { acceptInviteForUser } from "./lib/inviteAcceptance"
 import { cohortWorkspacePath } from "./lib/programCode"
@@ -191,39 +191,5 @@ export const listPendingForCohort = umbrellaLeaderQuery({
     }
 
     return results.sort((a, b) => b.createdAt - a.createdAt)
-  },
-})
-
-export const listPendingForPod = query({
-  args: { cohortId: v.id("cohorts") },
-  returns: v.array(
-    v.object({
-      _id: v.id("invites"),
-      email: v.string(),
-      role: roleValidator,
-      status: inviteStatusValidator,
-      createdAt: v.number(),
-      token: v.string(),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    await getCurrentUser(ctx)
-
-    const invites = await ctx.db
-      .query("invites")
-      .withIndex("by_cohort", (q) => q.eq("cohortId", args.cohortId))
-      .collect()
-
-    return invites
-      .filter((invite) => invite.status === "pending")
-      .map((invite) => ({
-        _id: invite._id,
-        email: invite.email,
-        role: invite.role,
-        status: invite.status,
-        createdAt: invite.createdAt,
-        token: invite.token,
-      }))
-      .sort((a, b) => b.createdAt - a.createdAt)
   },
 })

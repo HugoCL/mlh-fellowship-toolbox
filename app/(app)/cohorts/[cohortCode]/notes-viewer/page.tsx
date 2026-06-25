@@ -2,10 +2,12 @@
 
 import {
   ArrowDownAZIcon,
+  ClipboardPasteIcon,
   ClockIcon,
   CopyIcon,
   EyeIcon,
   EyeOffIcon,
+  FileJsonIcon,
   MailIcon,
   Maximize2Icon,
   Minimize2Icon,
@@ -14,21 +16,37 @@ import {
   RotateCcwIcon,
   ShuffleIcon,
   SparklesIcon,
+  UploadIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import {
+  type ChangeEvent,
+  type DragEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/app/empty-state"
 import { PageBody, PageHeader } from "@/components/app/page-frame"
 import { UmbrellaAdminActivityNotice } from "@/components/app/umbrella-admin-activity-notice"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import {
   type FellowNote,
   NOTE_KIND_LABEL,
   type ParsedNotes,
   parseLmsNotesJson,
+  parseLmsNotesUpload,
   shuffleNotes,
   sortNotesByName,
   sortNotesBySubmission,
@@ -79,23 +97,73 @@ export default function NotesViewerPage() {
   const [presenting, setPresenting] = useState(false)
   const [showEmail, setShowEmail] = useState(false)
   const [showEmpty, setShowEmpty] = useState(false)
+  const [uploadName, setUploadName] = useState<string | null>(null)
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
 
   const presentRef = useRef<HTMLDivElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const notes = parsed?.notes ?? []
   const currentNote = parsed ? notes[order[position]] : undefined
 
+  const applyParseResult = useCallback(
+    (result: ReturnType<typeof parseLmsNotesJson>) => {
+      if (!result.ok) {
+        setError(result.error)
+        return
+      }
+      setError(null)
+      setParsed(result.data)
+      setOrder(result.data.notes.map((_, index) => index))
+      setPosition(0)
+    },
+    [],
+  )
+
   const handleLoad = useCallback(() => {
-    const result = parseLmsNotesJson(rawInput)
-    if (!result.ok) {
-      setError(result.error)
-      return
-    }
+    applyParseResult(parseLmsNotesJson(rawInput))
+  }, [applyParseResult, rawInput])
+
+  const handleFile = useCallback(
+    async (file: File) => {
+      try {
+        const content = await file.text()
+        setRawInput(content)
+        setUploadName(file.name)
+        applyParseResult(parseLmsNotesUpload({ fileName: file.name, content }))
+      } catch {
+        setError("Couldn't read that file. Try downloading the export again.")
+      }
+    },
+    [applyParseResult],
+  )
+
+  const handleFileChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (!file) return
+      void handleFile(file)
+      event.target.value = ""
+    },
+    [handleFile],
+  )
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      setIsDraggingFile(false)
+      const file = event.dataTransfer.files?.[0]
+      if (!file) return
+      void handleFile(file)
+    },
+    [handleFile],
+  )
+
+  const handleClearInput = useCallback(() => {
+    setRawInput("")
+    setUploadName(null)
     setError(null)
-    setParsed(result.data)
-    setOrder(result.data.notes.map((_, index) => index))
-    setPosition(0)
-  }, [rawInput])
+  }, [])
 
   const reorder = useCallback((next: number[]) => {
     setOrder(next)
@@ -267,41 +335,138 @@ export default function NotesViewerPage() {
       <>
         <PageHeader
           title="Notes Viewer"
-          description="Paste a retro or standup export and present it during the meeting."
+          description="Drop an LMS export or paste JSON."
         />
         <PageBody>
-          <Card className="mx-auto w-full max-w-3xl">
-            <CardContent className="flex flex-col gap-4 py-6">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+              <Card className="border-border/70 bg-card/80">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UploadIcon data-icon="inline-start" />
+                    Import notes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,.txt,application/json,text/plain"
+                    className="sr-only"
+                    onChange={handleFileChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragEnter={(event) => {
+                      event.preventDefault()
+                      setIsDraggingFile(true)
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault()
+                      setIsDraggingFile(true)
+                    }}
+                    onDragLeave={(event) => {
+                      event.preventDefault()
+                      setIsDraggingFile(false)
+                    }}
+                    onDrop={handleDrop}
+                    className={cn(
+                      "group flex min-h-80 cursor-pointer flex-col justify-between rounded-lg border border-dashed p-5 text-left transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30",
+                      isDraggingFile
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-muted/30 hover:bg-muted/50",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex size-11 items-center justify-center rounded-md bg-background text-foreground ring-1 ring-border/70">
+                          <FileJsonIcon />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <p className="font-heading text-xl font-semibold tracking-tight">
+                            Drop a JSON export
+                          </p>
+                          <p className="max-w-sm text-sm text-muted-foreground">
+                            The file loads locally in your browser and is ready
+                            to present as soon as it parses.
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline">.json</Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-4">
+                      <span className="min-w-0 truncate text-sm text-muted-foreground">
+                        {uploadName ?? "No file selected"}
+                      </span>
+                      <span className="inline-flex h-7 items-center justify-center rounded-md border border-border bg-background px-2 text-xs font-medium">
+                        Choose file
+                      </span>
+                    </div>
+                  </button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/70 bg-card/80">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardPasteIcon data-icon="inline-start" />
+                    Paste JSON
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FieldGroup>
+                    <Field data-invalid={Boolean(error)}>
+                      <FieldLabel htmlFor="notes-json">
+                        LMS export content
+                      </FieldLabel>
+                      <FieldDescription>
+                        Use this when copying directly from the report export.
+                      </FieldDescription>
+                      <Textarea
+                        id="notes-json"
+                        value={rawInput}
+                        onChange={(event) => {
+                          setRawInput(event.target.value)
+                          setUploadName(null)
+                        }}
+                        placeholder='[[{ "userfullname": "...", "date": "...", ... }]]'
+                        className="min-h-72 font-mono text-xs"
+                        spellCheck={false}
+                        aria-invalid={Boolean(error)}
+                      />
+                      <FieldError>{error}</FieldError>
+                    </Field>
+                  </FieldGroup>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <NotebookPenIcon className="size-4" />
-                Paste the JSON export from the LMS report below.
+                <NotebookPenIcon />
+                Notes stay on this page only.
               </div>
-              <Textarea
-                value={rawInput}
-                onChange={(event) => setRawInput(event.target.value)}
-                placeholder='[[{ "userfullname": "…", "date": "…", … }]]'
-                className="min-h-64 font-mono text-xs"
-                spellCheck={false}
-              />
-              {error ? (
-                <p className="text-sm text-destructive">{error}</p>
-              ) : null}
               <div className="flex items-center justify-end gap-2">
                 <Button
                   variant="ghost"
                   size="lg"
-                  onClick={() => setRawInput("")}
-                  disabled={rawInput.length === 0}
+                  onClick={handleClearInput}
+                  disabled={rawInput.length === 0 && !uploadName && !error}
                 >
                   Clear
                 </Button>
-                <Button size="lg" onClick={handleLoad}>
+                <Button
+                  size="lg"
+                  onClick={handleLoad}
+                  disabled={rawInput.trim().length === 0}
+                >
                   <PlayIcon data-icon="inline-start" />
                   Load notes
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </PageBody>
       </>
     )
@@ -316,15 +481,23 @@ export default function NotesViewerPage() {
         presenting ? "p-6" : "",
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="gap-1">
-            <SparklesIcon />
-            {NOTE_KIND_LABEL[parsed.kind]}
-          </Badge>
-          <span className="text-sm font-medium text-muted-foreground tabular-nums">
-            {position + 1} / {total}
-          </span>
+      <div className="flex flex-col gap-3 border-b border-border/70 pb-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge variant="secondary" className="gap-1">
+              <SparklesIcon />
+              {NOTE_KIND_LABEL[parsed.kind]}
+            </Badge>
+            <span className="text-sm font-medium text-muted-foreground tabular-nums">
+              {position + 1} of {total}
+            </span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-[width]"
+              style={{ width: `${((position + 1) / total) * 100}%` }}
+            />
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <Button
@@ -399,33 +572,46 @@ export default function NotesViewerPage() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside className="hidden min-h-0 flex-col overflow-auto rounded-xl border border-border/70 bg-card/40 p-2 lg:flex">
-          <p className="px-2 py-1.5 text-[0.7rem] font-medium tracking-wide text-muted-foreground uppercase">
-            Running order
-          </p>
-          <ul className="flex flex-col gap-0.5">
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <aside className="hidden min-h-0 flex-col overflow-auto border-r border-border/70 pr-4 lg:flex">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-background/95 py-2 backdrop-blur-sm">
+            <p className="text-[0.7rem] font-medium tracking-wide text-muted-foreground uppercase">
+              Running order
+            </p>
+            <Badge variant="outline">{total}</Badge>
+          </div>
+          <ul className="flex flex-col gap-1">
             {order.map((noteIndex, queueIndex) => {
               const note = notes[noteIndex]
               const isCurrent = queueIndex === position
+              const isPast = queueIndex < position
               return (
                 <li key={`${noteIndex}-${note.email || note.name}`}>
                   <button
                     type="button"
                     onClick={() => setPosition(queueIndex)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+                      "group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30",
                       isCurrent
-                        ? "bg-primary/10 font-medium text-foreground"
-                        : queueIndex < position
-                          ? "text-muted-foreground hover:bg-muted"
-                          : "hover:bg-muted",
+                        ? "bg-primary/10 text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <span className="w-5 shrink-0 text-xs tabular-nums text-muted-foreground">
+                    <span
+                      className={cn(
+                        "flex size-6 shrink-0 items-center justify-center rounded-full text-xs tabular-nums ring-1 ring-border/70",
+                        isCurrent
+                          ? "bg-primary text-primary-foreground ring-primary"
+                          : isPast
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-background text-muted-foreground",
+                      )}
+                    >
                       {queueIndex + 1}
                     </span>
-                    <span className="truncate">{note.name}</span>
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {note.name}
+                    </span>
                   </button>
                 </li>
               )
@@ -434,37 +620,47 @@ export default function NotesViewerPage() {
         </aside>
 
         {currentNote ? (
-          <div className="flex min-h-0 flex-col overflow-auto rounded-xl border border-border/70 bg-card/30 p-6">
-            <div className="flex flex-col gap-1 border-b border-border/60 pb-4">
-              <h2
-                className={cn(
-                  "font-heading font-semibold tracking-tight text-balance",
-                  presenting ? "text-4xl" : "text-3xl",
-                )}
-              >
-                {currentNote.name}
-              </h2>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                {currentNote.submittedAtLabel ? (
-                  <span className="inline-flex items-center gap-1">
-                    <ClockIcon className="size-3.5" />
-                    {currentNote.submittedAtLabel}
+          <div className="flex min-h-0 flex-col overflow-auto rounded-lg bg-card/50 ring-1 ring-border/70">
+            <div className="flex flex-col gap-4 border-b border-border/70 p-5 lg:p-7">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex min-w-0 flex-col gap-2">
+                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Current submission
                   </span>
-                ) : null}
-                {showEmail && currentNote.email ? (
-                  <span className="inline-flex items-center gap-1">
-                    <MailIcon className="size-3.5" />
-                    {currentNote.email}
-                  </span>
-                ) : null}
+                  <h2
+                    className={cn(
+                      "font-heading font-semibold tracking-tight text-balance",
+                      presenting ? "text-5xl" : "text-4xl",
+                    )}
+                  >
+                    {currentNote.name}
+                  </h2>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  {currentNote.submittedAtLabel ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1">
+                      <ClockIcon />
+                      {currentNote.submittedAtLabel}
+                    </span>
+                  ) : null}
+                  {showEmail && currentNote.email ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1">
+                      <MailIcon />
+                      {currentNote.email}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-5 pt-5">
+            <div className="grid gap-0 divide-y divide-border/70 p-5 lg:p-7">
               {currentNote.sections.map((section) => {
                 if (section.isEmpty && !showEmpty) return null
                 return (
-                  <div key={section.key} className="flex flex-col gap-1.5">
+                  <section
+                    key={section.key}
+                    className="grid gap-3 py-5 first:pt-0 last:pb-0 lg:grid-cols-[13rem_minmax(0,1fr)]"
+                  >
                     <h3
                       className={cn(
                         "text-xs font-semibold tracking-wide uppercase",
@@ -480,16 +676,16 @@ export default function NotesViewerPage() {
                         No response
                       </p>
                     ) : (
-                        <p
-                          className={cn(
-                            "whitespace-pre-line leading-relaxed text-foreground",
-                            presenting ? "text-lg" : "text-base",
-                          )}
-                        >
+                      <p
+                        className={cn(
+                          "whitespace-pre-line text-pretty leading-relaxed text-foreground",
+                          presenting ? "text-xl" : "text-lg",
+                        )}
+                      >
                         {section.content}
                       </p>
                     )}
-                  </div>
+                  </section>
                 )
               })}
             </div>

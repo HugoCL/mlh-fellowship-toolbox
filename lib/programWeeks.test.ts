@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { toTimestamp } from "./dates"
+import { programDateTimeInputToTimestamp, toTimestamp } from "./dates"
 import {
   getProgramWeeks,
   getSlotDateInProgramWeek,
@@ -31,9 +31,9 @@ describe("getProgramWeeks", () => {
 })
 
 describe("isSameCalendarDay", () => {
-  it("matches timestamps on the same local calendar day", () => {
-    const morning = new Date("2024-06-15T09:00:00").getTime()
-    const evening = new Date("2024-06-15T21:00:00").getTime()
+  it("matches timestamps on the same program calendar day", () => {
+    const morning = programDateTimeInputToTimestamp("2024-06-15T09:00")
+    const evening = programDateTimeInputToTimestamp("2024-06-15T21:00")
     expect(isSameCalendarDay(morning, evening)).toBe(true)
   })
 

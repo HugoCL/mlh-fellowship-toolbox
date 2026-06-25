@@ -16,6 +16,7 @@ import {
   cohortQuery,
   podManagementMutation,
 } from "./lib/customFunctions"
+import { getNotificationDeliveryStatus } from "./lib/notificationDeliveryStatus"
 import {
   alignFirstRunAt,
   computeNextRunAt,
@@ -797,8 +798,6 @@ export const applyDeliveryResults = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const now = Date.now()
-    let sent = 0
-    let failed = 0
 
     for (const result of args.results) {
       await ctx.db.patch("notificationRecipients", result.recipientId, {
@@ -806,12 +805,6 @@ export const applyDeliveryResults = internalMutation({
         pushSentAt: result.pushStatus === "sent" ? now : undefined,
         pushError: result.pushError,
       })
-
-      if (result.pushStatus === "sent") {
-        sent++
-      } else if (result.pushStatus === "failed") {
-        failed++
-      }
 
       for (const subscriptionId of result.disableSubscriptionIds ?? []) {
         await ctx.db.patch("notificationSubscriptions", subscriptionId, {
@@ -821,15 +814,24 @@ export const applyDeliveryResults = internalMutation({
       }
     }
 
-    let status: "sent" | "partial" | "failed" = "sent"
-    if (sent === 0 && failed > 0) {
-      status = "failed"
-    } else if (failed > 0) {
-      status = "partial"
-    } else if (sent === 0) {
-      status = "failed"
+    const recipients = await ctx.db
+      .query("notificationRecipients")
+      .withIndex("by_notification", (q) =>
+        q.eq("notificationId", args.notificationId),
+      )
+      .collect()
+
+    const rollup = {
+      pending: 0,
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+    }
+    for (const recipient of recipients) {
+      rollup[recipient.pushStatus]++
     }
 
+    const status = getNotificationDeliveryStatus(rollup)
     await ctx.db.patch("notifications", args.notificationId, { status })
     return null
   },

@@ -17,8 +17,7 @@ describe("computeNextRunAt", () => {
       afterTimestamp: after,
     })
 
-    expect(next).toBeGreaterThan(after)
-    expect(new Date(next).getHours()).toBeTruthy()
+    expect(toProgramDateTimeInputValue(next)).toBe("2026-06-16T09:00")
   })
 
   it("returns the next weekly occurrence on selected weekdays", () => {
@@ -30,7 +29,7 @@ describe("computeNextRunAt", () => {
       afterTimestamp: after,
     })
 
-    expect(next).toBeGreaterThan(after)
+    expect(toProgramDateTimeInputValue(next)).toBe("2026-06-22T09:00")
   })
 
   it("aligns first daily run to the configured time on the same day", () => {
@@ -55,5 +54,17 @@ describe("computeNextRunAt", () => {
 
     expect(missedRunAt).toBeLessThan(now)
     expect(toProgramDateTimeInputValue(next)).toBe("2026-06-17T09:00")
+  })
+
+  it("returns the next monthly occurrence on the configured day", () => {
+    const after = programDateTimeInputToTimestamp("2026-06-16T10:00")
+    const next = computeNextRunAt({
+      cadence: "monthly",
+      timeOfDayMinutes: 9 * 60,
+      dayOfMonth: 15,
+      afterTimestamp: after,
+    })
+
+    expect(toProgramDateTimeInputValue(next)).toBe("2026-07-15T09:00")
   })
 })

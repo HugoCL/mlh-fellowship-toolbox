@@ -3,6 +3,7 @@ import {
   decodeHtmlEntities,
   normalizeWhitespace,
   parseLmsNotesJson,
+  parseLmsNotesUpload,
   parseSubmittedDate,
   shuffleNotes,
   sortNotesByName,
@@ -107,6 +108,26 @@ describe("parseLmsNotesJson", () => {
   it("returns an error when notes can't be classified", () => {
     const result = parseLmsNotesJson(JSON.stringify([{ foo: "bar" }]))
     expect(result.ok).toBe(false)
+  })
+})
+
+describe("parseLmsNotesUpload", () => {
+  it("parses JSON uploaded from a supported file", () => {
+    const result = parseLmsNotesUpload({
+      fileName: "standup-export.json",
+      content: STANDUP_JSON,
+    })
+    expect(result.ok && result.data.kind).toBe("standup")
+  })
+
+  it("rejects unsupported file types before parsing", () => {
+    const result = parseLmsNotesUpload({
+      fileName: "standup-export.csv",
+      content: STANDUP_JSON,
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toMatch(/JSON file/i)
   })
 })
 
