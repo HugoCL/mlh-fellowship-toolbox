@@ -208,6 +208,22 @@ export default defineSchema({
     .index("by_cohort_and_fellow", ["cohortId", "fellowId"])
     .index("by_action_item_and_fellow", ["actionItemId", "fellowId"]),
 
+  progressReports: defineTable({
+    cohortId: v.id("cohorts"),
+    taskNames: v.array(v.string()),
+    fellows: v.array(
+      v.object({
+        fellowId: v.optional(v.id("fellows")),
+        name: v.string(),
+        email: v.string(),
+        pendingTasks: v.array(v.string()),
+      }),
+    ),
+    sourceRowCount: v.number(),
+    updatedAt: v.number(),
+    updatedByUserId: v.id("users"),
+  }).index("by_cohort", ["cohortId"]),
+
   /** Active impersonation session — one per actor at a time. */
   impersonationSessions: defineTable({
     actorUserId: v.id("users"),

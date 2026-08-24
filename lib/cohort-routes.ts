@@ -90,6 +90,7 @@ export const POD_FEATURE_SEGMENTS = [
   "lightning-talks",
   "action-items",
   "notes-viewer",
+  "progress-report",
   "notifications",
   "settings",
 ] as const

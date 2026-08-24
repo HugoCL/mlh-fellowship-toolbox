@@ -9,6 +9,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   LayoutDashboardIcon,
+  ListChecksIcon,
   ListTodoIcon,
   type LucideIcon,
   MessagesSquareIcon,
@@ -379,6 +380,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   label: "Notes Viewer",
                   icon: NotebookPenIcon,
                 },
+                {
+                  href: cohortPath(
+                    isCohortAdmin && selectedPodProgramCode
+                      ? selectedPodProgramCode
+                      : activeProgramCode,
+                    "progress-report",
+                  ),
+                  label: "Progress Report",
+                  icon: ListChecksIcon,
+                },
               ]
             : []),
         ]
@@ -401,6 +412,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href: myTasksPath(activeProgramCode),
                   label: "My Tasks",
                   icon: UserRoundIcon,
+                },
+                {
+                  href: cohortPath(activeProgramCode, "progress-report"),
+                  label: "Progress Report",
+                  icon: ListChecksIcon,
                 },
               ]
             : []),
