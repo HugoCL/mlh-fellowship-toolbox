@@ -68,7 +68,7 @@ export default function ProgressReportPage() {
     !isImpersonating &&
     cohort?.role === "podLeader" &&
     (cohort.canManagePod || cohort.isUmbrellaViewer)
-  const canView = !isImpersonating && (isLeader || cohort?.role === "fellow")
+  const canView = isLeader || cohort?.role === "fellow"
 
   const savedReport = useQuery(
     api.progressReports.getProgressReport,
