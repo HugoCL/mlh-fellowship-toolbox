@@ -295,7 +295,7 @@ export default function ProgressReportPage() {
     )
   }
 
-  if (isLeader && (showImporter || savedReport === null)) {
+  if (isLeader && (showImporter || !report)) {
     return (
       <>
         <PageHeader
@@ -507,63 +507,65 @@ export default function ProgressReportPage() {
             </div>
           </div>
 
-          <details className="rounded-lg border border-border/70 bg-card/80">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/30 [&::-webkit-details-marker]:hidden">
-              <span>Exclude columns</span>
-              <Badge variant="outline">{excludedTasks.size} excluded</Badge>
-            </summary>
-            <div className="border-t border-border/70 p-4">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Excluded Task columns are omitted when you save the report for
-                  fellows.
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={excludeAllTasks}
-                    disabled={excludedTasks.size === report.taskNames.length}
-                  >
-                    Exclude all
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearExcludedTasks}
-                    disabled={excludedTasks.size === 0}
-                  >
-                    Clear exclusions
-                  </Button>
+          {isLeader ? (
+            <details className="rounded-lg border border-border/70 bg-card/80">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/30 [&::-webkit-details-marker]:hidden">
+                <span>Exclude columns</span>
+                <Badge variant="outline">{excludedTasks.size} excluded</Badge>
+              </summary>
+              <div className="border-t border-border/70 p-4">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    Excluded Task columns are omitted when you save the report
+                    for fellows.
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={excludeAllTasks}
+                      disabled={excludedTasks.size === report.taskNames.length}
+                    >
+                      Exclude all
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearExcludedTasks}
+                      disabled={excludedTasks.size === 0}
+                    >
+                      Clear exclusions
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {report.taskNames.map((task, index) => {
+                    const checkboxId = `exclude-task-${index}`
+                    return (
+                      <div
+                        key={task}
+                        className="flex min-w-0 items-start gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50"
+                      >
+                        <Checkbox
+                          id={checkboxId}
+                          checked={excludedTasks.has(task)}
+                          onCheckedChange={(checked) =>
+                            toggleExcludedTask(task, checked === true)
+                          }
+                        />
+                        <label
+                          htmlFor={checkboxId}
+                          className="min-w-0 cursor-pointer text-sm leading-snug text-muted-foreground"
+                        >
+                          {task}
+                        </label>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-              <div className="grid gap-2 md:grid-cols-2">
-                {report.taskNames.map((task, index) => {
-                  const checkboxId = `exclude-task-${index}`
-                  return (
-                    <div
-                      key={task}
-                      className="flex min-w-0 items-start gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50"
-                    >
-                      <Checkbox
-                        id={checkboxId}
-                        checked={excludedTasks.has(task)}
-                        onCheckedChange={(checked) =>
-                          toggleExcludedTask(task, checked === true)
-                        }
-                      />
-                      <label
-                        htmlFor={checkboxId}
-                        className="min-w-0 cursor-pointer text-sm leading-snug text-muted-foreground"
-                      >
-                        {task}
-                      </label>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </details>
+            </details>
+          ) : null}
 
           {fellows.length === 0 ? (
             <EmptyState
