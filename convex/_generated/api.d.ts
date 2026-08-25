@@ -9,6 +9,7 @@
  */
 
 import type * as actionItems from "../actionItems.js";
+import type * as attendanceReports from "../attendanceReports.js";
 import type * as cohorts from "../cohorts.js";
 import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
@@ -53,6 +54,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   actionItems: typeof actionItems;
+  attendanceReports: typeof attendanceReports;
   cohorts: typeof cohorts;
   crons: typeof crons;
   dashboard: typeof dashboard;

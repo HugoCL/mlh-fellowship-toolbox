@@ -224,6 +224,28 @@ export default defineSchema({
     updatedByUserId: v.id("users"),
   }).index("by_cohort", ["cohortId"]),
 
+  attendanceReports: defineTable({
+    cohortId: v.id("cohorts"),
+    sessions: v.array(v.string()),
+    fellows: v.array(
+      v.object({
+        fellowId: v.optional(v.id("fellows")),
+        name: v.string(),
+        email: v.string(),
+        presentCount: v.number(),
+        lateCount: v.number(),
+        excusedCount: v.number(),
+        absentCount: v.number(),
+        sessionCount: v.number(),
+        absenceDates: v.array(v.string()),
+        excusedDates: v.array(v.string()),
+      }),
+    ),
+    sourceRowCount: v.number(),
+    updatedAt: v.number(),
+    updatedByUserId: v.id("users"),
+  }).index("by_cohort", ["cohortId"]),
+
   /** Active impersonation session — one per actor at a time. */
   impersonationSessions: defineTable({
     actorUserId: v.id("users"),

@@ -1,4 +1,4 @@
-import { decodeHtmlEntities } from "./lms-notes-viewer"
+import { cleanLmsCell, parseLmsCsvRows } from "./lms-csv"
 
 export type ProgressFellow = {
   name: string
@@ -22,80 +22,13 @@ export type ProgressReportUpload = {
   content: string
 }
 
-function parseCsvRows(raw: string, delimiter = ","): string[][] {
-  const rows: string[][] = []
-  let row: string[] = []
-  let field = ""
-  let quoted = false
-
-  const pushField = () => {
-    row.push(field)
-    field = ""
-  }
-
-  const pushRow = () => {
-    pushField()
-    if (row.some((value) => value.trim().length > 0)) {
-      rows.push(row)
-    }
-    row = []
-  }
-
-  for (let index = 0; index < raw.length; index += 1) {
-    const character = raw[index]
-
-    if (quoted) {
-      if (character === '"') {
-        if (raw[index + 1] === '"') {
-          field += '"'
-          index += 1
-        } else {
-          quoted = false
-        }
-      } else {
-        field += character
-      }
-      continue
-    }
-
-    if (character === '"' && field.length === 0) {
-      quoted = true
-    } else if (character === delimiter) {
-      pushField()
-    } else if (character === "\n") {
-      pushRow()
-    } else if (character !== "\r") {
-      field += character
-    }
-  }
-
-  if (quoted) {
-    throw new Error("Unclosed CSV field")
-  }
-
-  if (field.length > 0 || row.length > 0) {
-    pushRow()
-  }
-
-  return rows
-}
-
-function cleanCell(value: string | undefined): string {
-  return decodeHtmlEntities(
-    (value ?? "")
-      .replace(/^\uFEFF/, "")
-      .replace(/\s+/g, " ")
-      .trim(),
-  )
-}
-
 function isHeaderRow(row: string[]): boolean {
-  const cells = row.map(cleanCell)
+  const cells = row.map(cleanLmsCell)
   const hasEmail = cells.some((cell) => /^Email address$/i.test(cell))
   const hasName = cells.some((cell) =>
     /^First name\s*\/\s*Last name$/i.test(cell),
   )
-  const hasBlankNameColumn = cleanCell(row[0]) === ""
+  const hasBlankNameColumn = cleanLmsCell(row[0]) === ""
   return hasEmail && (hasName || hasBlankNameColumn)
 }
 
@@ -122,7 +55,7 @@ export function parseLmsProgressReportCsv(
   let headerIndex = -1
   for (const delimiter of delimiters) {
     try {
-      const candidateRows = parseCsvRows(raw, delimiter)
+      const candidateRows = parseLmsCsvRows(raw, delimiter)
       const candidateHeaderIndex = candidateRows.findIndex(isHeaderRow)
       if (candidateHeaderIndex !== -1) {
         rows = candidateRows
@@ -142,7 +75,7 @@ export function parseLmsProgressReportCsv(
     }
   }
 
-  const headers = rows[headerIndex]?.map(cleanCell) ?? []
+  const headers = rows[headerIndex]?.map(cleanLmsCell) ?? []
   const taskColumns = headers
     .map((title, index) => ({ title, index }))
     .filter(({ title }) => isTaskHeader(title))
@@ -156,12 +89,12 @@ export function parseLmsProgressReportCsv(
 
   const fellowRows = rows
     .slice(headerIndex + 1)
-    .map((row) => ({ row, name: cleanCell(row[0]) }))
+    .map((row) => ({ row, name: cleanLmsCell(row[0]) }))
     .filter(({ name }) => name.length > 0)
 
   const fellows = fellowRows.flatMap(({ row, name }) => {
     const pendingTasks = taskColumns.flatMap(({ title, index }) => {
-      const status = cleanCell(row[index])
+      const status = cleanLmsCell(row[index])
       if (isCompleted(status)) return []
       return [title]
     })
@@ -170,7 +103,7 @@ export function parseLmsProgressReportCsv(
     return [
       {
         name,
-        email: cleanCell(row[1]),
+        email: cleanLmsCell(row[1]),
         pendingTasks,
       },
     ]

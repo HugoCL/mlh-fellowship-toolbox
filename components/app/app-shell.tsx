@@ -5,6 +5,7 @@ import { useQuery } from "convex/react"
 import {
   BellIcon,
   BookUserIcon,
+  CalendarCheckIcon,
   CalendarDaysIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -390,6 +391,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   label: "Progress Report",
                   icon: ListChecksIcon,
                 },
+                {
+                  href: cohortPath(
+                    isCohortAdmin && selectedPodProgramCode
+                      ? selectedPodProgramCode
+                      : activeProgramCode,
+                    "attendance-report",
+                  ),
+                  label: "Attendance Report",
+                  icon: CalendarCheckIcon,
+                },
               ]
             : []),
         ]
@@ -417,6 +428,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href: cohortPath(activeProgramCode, "progress-report"),
                   label: "Progress Report",
                   icon: ListChecksIcon,
+                },
+                {
+                  href: cohortPath(activeProgramCode, "attendance-report"),
+                  label: "Attendance Report",
+                  icon: CalendarCheckIcon,
                 },
               ]
             : []),

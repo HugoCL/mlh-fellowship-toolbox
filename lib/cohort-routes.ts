@@ -91,6 +91,7 @@ export const POD_FEATURE_SEGMENTS = [
   "action-items",
   "notes-viewer",
   "progress-report",
+  "attendance-report",
   "notifications",
   "settings",
 ] as const
