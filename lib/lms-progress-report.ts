@@ -22,7 +22,7 @@ export type ProgressReportUpload = {
   content: string
 }
 
-function parseCsvRows(raw: string): string[][] {
+function parseCsvRows(raw: string, delimiter = ","): string[][] {
   const rows: string[][] = []
   let row: string[] = []
   let field = ""
@@ -60,7 +60,7 @@ function parseCsvRows(raw: string): string[][] {
 
     if (character === '"' && field.length === 0) {
       quoted = true
-    } else if (character === ",") {
+    } else if (character === delimiter) {
       pushField()
     } else if (character === "\n") {
       pushRow()
@@ -91,10 +91,12 @@ function cleanCell(value: string | undefined): string {
 
 function isHeaderRow(row: string[]): boolean {
   const cells = row.map(cleanCell)
-  return (
-    cells.some((cell) => /^First name\s*\/\s*Last name$/i.test(cell)) &&
-    cells.some((cell) => /^Email address$/i.test(cell))
+  const hasEmail = cells.some((cell) => /^Email address$/i.test(cell))
+  const hasName = cells.some((cell) =>
+    /^First name\s*\/\s*Last name$/i.test(cell),
   )
+  const hasBlankNameColumn = cleanCell(row[0]) === ""
+  return hasEmail && (hasName || hasBlankNameColumn)
 }
 
 function isTaskHeader(value: string): boolean {
@@ -115,19 +117,24 @@ export function parseLmsProgressReportCsv(
     }
   }
 
-  let rows: string[][]
-  try {
-    rows = parseCsvRows(raw)
-  } catch {
-    return {
-      ok: false,
-      error:
-        "That doesn't look like a valid CSV. Export the report again and try.",
+  const delimiters = raw.includes("\t") ? ["\t", ","] : [","]
+  let rows: string[][] | null = null
+  let headerIndex = -1
+  for (const delimiter of delimiters) {
+    try {
+      const candidateRows = parseCsvRows(raw, delimiter)
+      const candidateHeaderIndex = candidateRows.findIndex(isHeaderRow)
+      if (candidateHeaderIndex !== -1) {
+        rows = candidateRows
+        headerIndex = candidateHeaderIndex
+        break
+      }
+    } catch {
+      // Try the next supported delimiter before reporting an invalid export.
     }
   }
 
-  const headerIndex = rows.findIndex(isHeaderRow)
-  if (headerIndex === -1) {
+  if (!rows || headerIndex === -1) {
     return {
       ok: false,
       error:

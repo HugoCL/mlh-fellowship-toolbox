@@ -13,6 +13,13 @@ const REPORT_CSV = [
   '"Sage Ebert",sage@example.com,Completed,"Not completed","Not completed"',
 ].join("\n")
 
+const REPORT_TSV = [
+  "Only Task columns are included, and only unsubmitted rows are shown.",
+  '\t"Email address"\t"Module 1: Intro"\t"Task 1: GitHub"\t"Task 2: Build &amp; Ship"',
+  '"Jane Choi"\tjane@example.com\t"Completed"\t"Not completed"\t"Completed"',
+  '"Paul Contreras"\tpaul@example.com\t"Completed"\t"Completed"\t"Not completed"',
+].join("\n")
+
 describe("parseLmsProgressReportCsv", () => {
   it("keeps only fellows with unsubmitted Task columns", () => {
     const result = parseLmsProgressReportCsv(REPORT_CSV)
@@ -50,6 +57,29 @@ describe("parseLmsProgressReportCsv", () => {
       "name,email,Task 1: Test\nJane,jane@example.com,",
     )
     expect(missingHeader.ok).toBe(false)
+  })
+
+  it("accepts tab-separated Moodle pastes with a blank name header", () => {
+    const result = parseLmsProgressReportCsv(REPORT_TSV)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.taskNames).toEqual([
+      "Task 1: GitHub",
+      "Task 2: Build & Ship",
+    ])
+    expect(result.data.fellows).toEqual([
+      {
+        name: "Jane Choi",
+        email: "jane@example.com",
+        pendingTasks: ["Task 1: GitHub"],
+      },
+      {
+        name: "Paul Contreras",
+        email: "paul@example.com",
+        pendingTasks: ["Task 2: Build & Ship"],
+      },
+    ])
   })
 })
 
