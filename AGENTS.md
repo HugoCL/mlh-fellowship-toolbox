@@ -140,3 +140,17 @@ Environment is pre-provisioned. The startup update script runs `pnpm install`. R
 - **Login / E2E test users** (Clerk test mode, verification code `424242`): `hugo.castro+clerk_test@mlh.io` (platform admin) and `hugo.castro.fellow-test+clerk_test@mlh.io` (fellow). The UI sign-in flow is: enter email → Continue → "Use another method" → "Email code" → enter `424242`.
 - **E2E (`pnpm test:e2e`)** targets the already-running `pnpm dev` locally (no webServer unless `CI=true`). Install the browser first: `pnpm exec playwright install --with-deps chromium`. The Playwright browser cache is not part of the standard dependency refresh, so re-run that install in a fresh VM before E2E.
 - `pnpm lint` (Biome) currently reports one pre-existing formatting error in `app/(app)/cohorts/[cohortCode]/demo-days/page.tsx` on `main`; `pnpm lint:fix` would resolve it.
+
+<!-- convex-ai-start -->
+
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read
+`convex/_generated/ai/guidelines.md` first** for important guidelines on
+how to correctly use Convex APIs and patterns. The file contains rules that
+override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running
+`npx convex ai-files install`.
+
+<!-- convex-ai-end -->
