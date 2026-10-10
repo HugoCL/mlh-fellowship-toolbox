@@ -1,9 +1,8 @@
 export const E2E_CLERK_ADMIN_EMAIL =
-  process.env.E2E_CLERK_ADMIN_EMAIL ?? "hugo.castro+clerk_test@mlh.io"
+  process.env.E2E_CLERK_ADMIN_EMAIL ?? "admin+clerk_test@example.com"
 
 export const E2E_CLERK_FELLOW_EMAIL =
-  process.env.E2E_CLERK_FELLOW_EMAIL ??
-  "hugo.castro.fellow-test+clerk_test@mlh.io"
+  process.env.E2E_CLERK_FELLOW_EMAIL ?? "fellow+clerk_test@example.com"
 
 export const E2E_CLERK_TEST_CODE = process.env.E2E_CLERK_TEST_CODE ?? "424242"
 
